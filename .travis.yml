@@ -1,5 +1,13 @@
 language: java
  
+sudo: false
+dist: precise
+cache:
+  directories:
+  - $HOME/.m2
+language: java
+jdk:
+  - openjdk7
 env:
   global:
     - SONATYPE_USERNAME=chicchiricco
