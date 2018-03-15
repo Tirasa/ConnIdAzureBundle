@@ -196,57 +196,16 @@
         </configuration>
       </plugin>
 
-      <plugin>        
+      <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
         <artifactId>maven-license-plugin</artifactId>
-        <inherited>true</inherited>
+        <version>1.10.b1</version>
+        <inherited>false</inherited>
         <configuration>
           <skip>true</skip>
         </configuration>
       </plugin>
-      
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>2.11</version>
-        <inherited>false</inherited>
-        <configuration>
-          <header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
-          <properties>
-            <owner>ConnId</owner>
-            <email>connid-dev@googlegroups.com</email>
-          </properties>
-          <excludes>
-            <exclude>**/LICENSE*</exclude>
-            <exclude>**/NOTICE*</exclude>
-            <exclude>**/*.pfx</exclude>
-            <exclude>**/*.dll</exclude>
-            <exclude>**/*.so</exclude>
-            <exclude>**/*.jnilib</exclude>
-            <exclude>nbactions.xml</exclude>
-            <exclude>nb-configuration.xml</exclude>
-            <exclude>**/META-INF/services/**</exclude>
-            <exclude>**/*.css</exclude>
-            <exclude>**/*.js</exclude>
-            <exclude>**/*.csv</exclude>
-            <exclude>**/maven-eclipse.xml</exclude>
-            <exclude>**/*.iml</exclude>
-            <exclude>**/*.log</exclude>
-            <exclude>.externalToolBuilders/**</exclude>
-            <exclude>.git/**</exclude>
-            <exclude>.idea/**</exclude>
-            <exclude>**/.*</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>   
-      
+    
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
