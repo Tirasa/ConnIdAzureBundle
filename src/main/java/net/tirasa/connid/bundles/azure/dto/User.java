@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 ConnId (connid-dev@googlegroups.com)
+ * Copyright (C) 2018 ConnId (connid-dev@googlegroups.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -179,7 +179,7 @@ public class User implements AzureObject {
     private GuardedString password;
 
     @JsonIgnore
-    private Stream<?> thumbnailPhoto;
+    private byte[] thumbnailPhoto;
 
     @JsonIgnore
     private List<String> license = new ArrayList<>();
@@ -675,12 +675,12 @@ public class User implements AzureObject {
         this.signInNames = signInNames;
     }
 
-    public Stream<?> getThumbnailPhoto() {
+    public byte[] getThumbnailPhoto() {
         return thumbnailPhoto;
     }
 
-    public void setThumbnailPhoto(final Stream<?> thumbnailPhoto) {
-        this.thumbnailPhoto = thumbnailPhoto;
+    public void setThumbnailPhoto(final byte[] thumbnailPhoto) {
+        this.thumbnailPhoto = ArrayUtils.clone(thumbnailPhoto);
     }
 
     public List<Object> getUserIdentities() {
@@ -938,8 +938,7 @@ public class User implements AzureObject {
                         String.class.cast(value);
                 break;
             case "thumbnailPhoto":
-                thumbnailPhoto =
-                        Stream.class.cast(value);
+                thumbnailPhoto = (byte[]) value;
                 break;
             case "userType":
                 userType =

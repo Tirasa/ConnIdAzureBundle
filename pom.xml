@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (C) 2016 ConnId (connid-dev@googlegroups.com)
+    Copyright (C) 2018 ConnId (connid-dev@googlegroups.com)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -199,8 +199,8 @@
         <version>3.7.0</version> 
         <inherited>false</inherited>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>${java.version}</source>
+          <target>${java.version}</target>
           <useIncrementalCompilation>false</useIncrementalCompilation>
           <showWarnings>true</showWarnings>
           <showDeprecation>true</showDeprecation>
@@ -225,7 +225,7 @@
         <configuration>
           <skip>true</skip>
         </configuration>
-      </plugin>   
+      </plugin>
 
       <!-- Put NOTICE and LICENSE files in all artifacts and javadocs -->
       <plugin>
@@ -321,10 +321,7 @@
   <profiles>
     <profile>
       <id>it</id>
-      <properties>
-      </properties>
-      <dependencies>
-      </dependencies>
+
       <build>
         <defaultGoal>clean package</defaultGoal>
         <plugins>
