@@ -182,7 +182,7 @@ public class AzureConnector implements
                                     client.getAuthenticated().getAllUsersNextPage(pagesSize, cookie, false);
                             users = pagedResult.getUsers();
 
-                            cookie = pagedResult.getSkipToken();
+                            cookie = users.size() > pagesSize ? pagedResult.getSkipToken() : null;
                         } else {
                             PagedUsers pagedResult = client.getAuthenticated().getAllUsers(pagesSize);
                             users = pagedResult.getUsers();
@@ -230,7 +230,7 @@ public class AzureConnector implements
                                     client.getAuthenticated().getAllGroupsNextPage(pagesSize, cookie, false);
                             groups = pagedResult.getGroups();
 
-                            cookie = pagedResult.getSkipToken();
+                            cookie = groups.size() > pagesSize ? pagedResult.getSkipToken() : null;
                         } else {
                             PagedGroups pagedResult = client.getAuthenticated().getAllGroups(pagesSize);
                             groups = pagedResult.getGroups();

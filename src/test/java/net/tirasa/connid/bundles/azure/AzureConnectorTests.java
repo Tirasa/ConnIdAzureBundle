@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,12 +49,15 @@ import org.identityconnectors.framework.api.ConnectorFacade;
 import org.identityconnectors.framework.api.ConnectorFacadeFactory;
 import org.identityconnectors.framework.common.objects.Attribute;
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
+import org.identityconnectors.framework.common.objects.ConnectorObject;
 import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.ObjectClassInfo;
 import org.identityconnectors.framework.common.objects.OperationOptionsBuilder;
 import org.identityconnectors.framework.common.objects.PredefinedAttributes;
+import org.identityconnectors.framework.common.objects.ResultsHandler;
 import org.identityconnectors.framework.common.objects.Schema;
 import org.identityconnectors.framework.common.objects.SearchResult;
+import org.identityconnectors.framework.common.objects.SortKey;
 import org.identityconnectors.framework.common.objects.Uid;
 import org.identityconnectors.test.common.TestHelpers;
 import org.identityconnectors.test.common.ToListResultsHandler;
@@ -69,6 +73,8 @@ public class AzureConnectorTests {
     private static AzureConnectorConfiguration CONF;
 
     private static AzureConnector CONN;
+
+    protected static ConnectorFacade connector;
 
     @BeforeClass
     public static void setUpConf() throws IOException {
@@ -93,6 +99,8 @@ public class AzureConnectorTests {
             CONN.schema();
         }
 
+        connector = newFacade();
+
         assertNotNull(CONF);
         assertNotNull(isValid);
         assertNotNull(CONF.getAuthority());
@@ -104,7 +112,7 @@ public class AzureConnectorTests {
         assertNotNull(CONF.getUsername());
     }
 
-    private ConnectorFacade newFacade() {
+    private static ConnectorFacade newFacade() {
         ConnectorFacadeFactory factory = ConnectorFacadeFactory.getInstance();
         APIConfiguration impl = TestHelpers.createTestConfiguration(AzureConnector.class, CONF);
         impl.getResultsHandlerConfiguration().setFilteredResultsHandlerInValidationMode(true);
@@ -140,8 +148,6 @@ public class AzureConnectorTests {
 
     @Test
     public void search() {
-        ConnectorFacade connector = newFacade();
-
         ToListResultsHandler handler = new ToListResultsHandler();
 
         SearchResult result = connector.
@@ -248,7 +254,7 @@ public class AzureConnectorTests {
             assertNotNull(created);
 
             // GET GROUP
-            Group group = client.getAuthenticated().getGroup(created.getUidValue()); // NB
+            Group group = client.getAuthenticated().getGroup(created.getUidValue());
             assertNotNull(group);
             assertEquals(group.getObjectId(), created.getUidValue());
 
@@ -270,7 +276,7 @@ public class AzureConnectorTests {
             assertNotNull(created);
 
             // GET USER
-            User user = client.getAuthenticated().getUser(created.getUidValue()); // NB
+            User user = client.getAuthenticated().getUser(created.getUidValue());
             assertNotNull(user);
             assertEquals(user.getObjectId(), created.getUidValue());
 
@@ -296,10 +302,10 @@ public class AzureConnectorTests {
 
             groupAttrs.clear();
             groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_DISPLAY_NAME, groupName));
-            groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_ID, testGroupUid)); // NB
+            groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_ID, testGroupUid));
 
             Uid updated = connector.update(
-                    ObjectClass.GROUP, new Uid(testGroupUid), groupAttrs, new OperationOptionsBuilder().build()); // NB
+                    ObjectClass.GROUP, new Uid(testGroupUid), groupAttrs, new OperationOptionsBuilder().build());
             assertNotNull(updated);
             assertEquals(testGroupUid, updated.getUidValue());
             assertNotEquals(created.getUidValue(), updated.getUidValue());
@@ -389,6 +395,40 @@ public class AzureConnectorTests {
     }
 
     @Test
+    public void pagedSearch() {
+        final List<ConnectorObject> results = new ArrayList<ConnectorObject>();
+        final ResultsHandler handler = new ResultsHandler() {
+
+            @Override
+            public boolean handle(final ConnectorObject co) {
+                return results.add(co);
+            }
+        };
+
+        final OperationOptionsBuilder oob = new OperationOptionsBuilder();
+        oob.setAttributesToGet("mailNickname");
+        oob.setPageSize(2);
+        oob.setSortKeys(new SortKey("mailNickname", false));
+
+        connector.search(ObjectClass.ACCOUNT, null, handler, oob.build());
+
+        assertEquals(2, results.size());
+
+        results.clear();
+
+        String cookie = "";
+        do {
+            oob.setPagedResultsCookie(cookie);
+            final SearchResult searchResult = connector.search(ObjectClass.ACCOUNT, null, handler, oob.build());
+            cookie = searchResult.getPagedResultsCookie();
+        } while (cookie != null);
+        
+        LOG.info("results : {0}", results);
+
+        assertTrue(results.size() > 2);
+    }
+
+    @Test
     public void serviceTest() {
         AzureService client = newClient();
 
@@ -397,7 +437,6 @@ public class AzureConnectorTests {
         UUID uid = UUID.randomUUID();
 
         try {
-
             // CREATE USER
             User user = new User();
             user.setAccountEnabled(true);
