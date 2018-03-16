@@ -15,14 +15,16 @@
  */
 package net.tirasa.connid.bundles.azure;
 
-import com.microsoft.azure.management.resources.fluentcore.utils.SdkContext;
 import java.util.Map;
-
+import java.util.Random;
+import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
 
 public class AzureConnectorTestsUtils {
 
-    private static final Log LOGGER = Log.getLog(AzureConnectorTestsUtils.class);
+    private static final Log LOG = Log.getLog(AzureConnectorTestsUtils.class);
+
+    private static final Random RANDOM = new Random();
 
     public static AzureConnectorConfiguration buildConfiguration(Map<String, String> configuration) {
         AzureConnectorConfiguration azureConnectorConfiguration = new AzureConnectorConfiguration();
@@ -52,7 +54,7 @@ public class AzureConnectorTestsUtils {
                     azureConnectorConfiguration.setUsername(entry.getValue());
                     break;
                 default:
-                    LOGGER.warn("Occurrence of an non defined parameter");
+                    LOG.warn("Occurrence of an non defined parameter");
                     break;
             }
         }
@@ -65,6 +67,6 @@ public class AzureConnectorTestsUtils {
     }
 
     public static String createRandomName(final String namePrefix) {
-        return SdkContext.randomResourceName(namePrefix, 30);
+        return namePrefix + StringUtil.randomString(RANDOM, (namePrefix.length() - 30));
     }
 }

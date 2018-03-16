@@ -26,10 +26,6 @@ import java.util.List;
 import java.util.Set;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
-import org.apache.commons.lang3.ArrayUtils;
-
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.identityconnectors.common.CollectionUtil;
 import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.common.objects.Attribute;
@@ -680,7 +676,7 @@ public class User implements AzureObject {
     }
 
     public void setThumbnailPhoto(final byte[] thumbnailPhoto) {
-        this.thumbnailPhoto = ArrayUtils.clone(thumbnailPhoto);
+        this.thumbnailPhoto = thumbnailPhoto == null ? null : thumbnailPhoto.clone();
     }
 
     public List<Object> getUserIdentities() {
@@ -725,11 +721,6 @@ public class User implements AzureObject {
     @Override
     public void setObjectId(final String objectId) {
         this.objectId = objectId;
-    }
-
-    @Override
-    public String toString() {
-        return ReflectionToStringBuilder.toString(this, ToStringStyle.JSON_STYLE);
     }
 
     @Override

@@ -24,8 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.identityconnectors.common.CollectionUtil;
 import org.identityconnectors.framework.common.objects.Attribute;
 
@@ -214,11 +212,6 @@ public class Group implements AzureObject {
     @Override
     public void setObjectId(final String objectId) {
         this.objectId = objectId;
-    }
-
-    @Override
-    public String toString() {
-        return ReflectionToStringBuilder.toString(this, ToStringStyle.JSON_STYLE);
     }
 
     @Override

@@ -20,8 +20,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -73,11 +71,6 @@ public class License {
         public int hashCode() {
             return skuId.hashCode();
         }
-
-        @Override
-        public String toString() {
-            return ReflectionToStringBuilder.toString(this, ToStringStyle.JSON_STYLE);
-        }
     }
 
     public static License create(final License license) {
@@ -124,11 +117,6 @@ public class License {
 
     public void setRemoveLicenses(final List<String> removeLicenses) {
         this.removeLicenses = removeLicenses;
-    }
-
-    @Override
-    public String toString() {
-        return ReflectionToStringBuilder.toString(this, ToStringStyle.JSON_STYLE);
     }
 
 }

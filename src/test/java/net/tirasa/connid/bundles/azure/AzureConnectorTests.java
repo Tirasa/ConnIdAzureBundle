@@ -235,7 +235,6 @@ public class AzureConnectorTests {
         String testGroupUid = null;
         String testUserUid = null;
         try {
-
             // CREATE GROUP
             String groupName = UUID.randomUUID().toString();
 
@@ -264,7 +263,6 @@ public class AzureConnectorTests {
             Set<Attribute> userAttrs = new HashSet<>();
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, username));
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_MAIL_NICKNAME, username));
-//            userAttrs.add(AttributeBuilder.build("userPrincipalName", username + "@" + CONF.getDomain()));
             userAttrs.add(AttributeBuilder.buildPassword(new GuardedString("Password123".toCharArray())));
             userAttrs.add(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, testGroupUid));
 
@@ -382,7 +380,6 @@ public class AzureConnectorTests {
             // TEST USER / GROUP "to attributes" CONVERSION
             LOG.info("User to Attributes: {0}", user.toAttributes());
             LOG.info("Group to Attributes: {0}", group.toAttributes());
-
         } catch (Exception e) {
             LOG.error(e, "While running test");
             fail(e.getMessage());
@@ -559,7 +556,6 @@ public class AzureConnectorTests {
                     client.getAuthenticated().getAvailableExtensionProperties(userCreated.getObjectId(), false);
             assertNotNull(availableProperties);
             LOG.info("availableProperties : {0}", availableProperties);
-
         } catch (Exception e) {
             LOG.error(e, "While running test");
             fail(e.getMessage());

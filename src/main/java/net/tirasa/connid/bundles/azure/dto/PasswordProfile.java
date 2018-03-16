@@ -20,8 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashSet;
 import java.util.Set;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.common.security.SecurityUtil;
 import org.identityconnectors.framework.common.objects.Attribute;
@@ -63,27 +61,21 @@ public class PasswordProfile {
         this.enforceChangePasswordPolicy = enforceChangePasswordPolicy;
     }
 
+    private GuardedString asGuardedString() {
+        return password == null
+                ? null
+                : new GuardedString(password.toCharArray());
+    }
+
     public Set<Attribute> toAttributes() {
         Set<Attribute> attrs = new HashSet<>();
-        attrs.add(AttributeBuilder.build("password", password == null
-                ? null
-                : new GuardedString(password.toCharArray())));
+        attrs.add(AttributeBuilder.build("password", asGuardedString()));
         return attrs;
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
-    }
-
-    @Override
     public String toString() {
-        return "PasswordProfile [password=" + password + ", forceChangePasswordNextLogin="
+        return "PasswordProfile [password=" + asGuardedString() + ", forceChangePasswordNextLogin="
                 + forceChangePasswordNextLogin + "]";
     }
 

@@ -16,7 +16,6 @@
 package net.tirasa.connid.bundles.azure.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.microsoft.aad.adal4j.AuthenticationContext;
 import com.microsoft.aad.adal4j.AuthenticationResult;
 import java.io.IOException;
@@ -83,7 +82,6 @@ public class AzureService {
 
     public static final String ACCEPT_HEADER = "Accept";
 
-//    public static String SKIP_TOKEN_PAGED_RESULTS;
     private final String domain;
 
     private final String authority;
@@ -129,7 +127,6 @@ public class AzureService {
                     null);
 
             authenticationResult = future.get();
-
         } catch (InterruptedException | ExecutionException | MalformedURLException ex) {
             AzureUtils.handleGeneralError("While performing Azure authentication", ex);
         } finally {
@@ -173,7 +170,7 @@ public class AzureService {
         checkAuth();
 
         WebClient webClient = WebClient
-                .create(resourceURI, Collections.singletonList(new JacksonJsonProvider()))
+                .create(resourceURI)
                 .type(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationResult.getAccessToken())
                 .path(domain)
@@ -264,8 +261,7 @@ public class AzureService {
         // e.g. 
         // https://graph.windows.net/[DOMAIN_NAME].onmicrosoft.com/$metadata#directoryObjects/Microsoft.DirectoryServices.User
         WebClient webClient = WebClient
-                .create(AzureConnectorConfiguration.DEFAULT_RESOURCE_URI,
-                        Collections.singletonList(new JacksonJsonProvider()))
+                .create(AzureConnectorConfiguration.DEFAULT_RESOURCE_URI)
                 .path("$metadata");
 
         try {

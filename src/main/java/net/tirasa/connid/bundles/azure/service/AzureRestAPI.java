@@ -36,7 +36,6 @@ import net.tirasa.connid.bundles.azure.dto.PasswordProfile;
 import net.tirasa.connid.bundles.azure.dto.User;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
@@ -84,7 +83,7 @@ public class AzureRestAPI {
         WebClient webClient = azureService.getWebclient("users",
                 "$top="
                 + String.valueOf(pageSize)
-                + (StringUtils.isNotBlank(skipToken)
+                + (StringUtil.isNotBlank(skipToken)
                 ? ("&" + AzureService.SKIP_TOKEN_ID + skipToken) : "")
                 + ((backward != null && backward) ? "previous-page=true" : ""));
 
@@ -156,7 +155,11 @@ public class AzureRestAPI {
         ObjectNode json = AzureUtils.MAPPER.createObjectNode();
         json.set("url", json.textNode(webClientUser.getCurrentURI().toString()));
 
-        webClient.post(json);
+        try {
+            webClient.post(AzureUtils.MAPPER.writeValueAsString(json));
+        } catch (IOException ex) {
+            AzureUtils.handleGeneralError("While adding User to Group", ex);
+        }
     }
 
     /**
@@ -205,7 +208,7 @@ public class AzureRestAPI {
         WebClient webClient = azureService.getWebclient("groups",
                 "$top="
                 + String.valueOf(pageSize)
-                + (StringUtils.isNotBlank(skipToken)
+                + (StringUtil.isNotBlank(skipToken)
                 ? ("&" + AzureService.SKIP_TOKEN_ID + skipToken) : "")
                 + (backward != null && backward ? "previous-page=true" : ""));
 
@@ -546,7 +549,7 @@ public class AzureRestAPI {
 
             checkUserValid(user);
 
-            if (StringUtils.isBlank(user.getUserPrincipalName())) {
+            if (StringUtil.isBlank(user.getUserPrincipalName())) {
                 // I'll do this here because it can't be dont in Azure PropagationActions, because REST connector
                 // does not have Azure "domain" info in connector configurations list 
                 // (as it would do a real full Azure Connector) 
@@ -653,13 +656,13 @@ public class AzureRestAPI {
             PagedUsers pagedUsers = new PagedUsers();
             pagedUsers.setUsers(doGetAllUsers(webClient));
             pagedUsers.setSkipToken(
-                    StringUtils.isNotBlank(skipToken) ? skipToken : azureService.getPagedResultsSkipToken());
+                    StringUtil.isNotBlank(skipToken) ? skipToken : azureService.getPagedResultsSkipToken());
             pagedObj = pagedUsers;
         } else if (type.equals("groups")) {
             PagedGroups pagedGroups = new PagedGroups();
             pagedGroups.setGroups(doGetAllGroups(webClient));
             pagedGroups.setSkipToken(
-                    StringUtils.isNotBlank(skipToken) ? skipToken : azureService.getPagedResultsSkipToken());
+                    StringUtil.isNotBlank(skipToken) ? skipToken : azureService.getPagedResultsSkipToken());
             pagedObj = pagedGroups;
         }
         return pagedObj;
