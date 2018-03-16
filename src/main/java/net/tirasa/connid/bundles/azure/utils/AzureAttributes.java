@@ -95,8 +95,6 @@ public final class AzureAttributes {
 
         List<Map<String, String>> userMetadata = AzureService.getMetadata(AzureService.USER_METADATA_TYPE_ID_VALUE);
         List<Map<String, String>> groupMetadata = AzureService.getMetadata(AzureService.GROUP_METADATA_TYPE_ID_VALUE);
-//        LOG.info("Metadata User : {0}", userMetadata);
-//        LOG.info("Metadata Group : {0}", groupMetadata);
 
         ObjectClassInfoBuilder userBuilder = new ObjectClassInfoBuilder().setType(ObjectClass.ACCOUNT_NAME);
         ObjectClassInfo user;

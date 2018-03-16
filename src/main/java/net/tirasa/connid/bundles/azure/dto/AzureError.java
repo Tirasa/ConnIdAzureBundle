@@ -83,8 +83,6 @@ public class AzureError {
             throw new RuntimeException(returnMessage.replaceAll("\\{", "'{'").replaceAll("\\}", "'}'"));
         }
 
-        log(action, response);
-
         switch (errorCode) {
             case "Request_ResourceNotFound":
                 throw new NoSuchEntityException(response.readEntity(String.class));
