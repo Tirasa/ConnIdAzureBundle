@@ -754,14 +754,17 @@ public class User implements AzureObject {
     }
 
     private PasswordProfile createPasswordProfile(final String value) {
+        GuardedString newValue = AzureUtils.createPassword(value);
+        password = newValue;
         passwordProfile = new PasswordProfile();
-        passwordProfile.setPassword(AzureUtils.createPassword(value));
+        passwordProfile.setPassword(newValue);
         passwordProfile.setEnforceChangePasswordPolicy(false);
         passwordProfile.setForceChangePasswordNextLogin(false);
         return passwordProfile;
     }
 
     private PasswordProfile createPasswordProfile(final GuardedString value) {
+        password = value;
         passwordProfile = new PasswordProfile();
         passwordProfile.setPassword(value);
         passwordProfile.setEnforceChangePasswordPolicy(false);

@@ -300,7 +300,7 @@ public class AzureConnector implements
                 if (status == null
                         || status.getValue() == null
                         || status.getValue().isEmpty()) {
-                    LOG.warn("{0} attribute value not correct, can't handle user status",
+                    LOG.warn("{0} attribute value not correct or not found, won't handle user status",
                             OperationalAttributes.ENABLE_NAME);
                 } else {
                     user.setAccountEnabled(Boolean.parseBoolean(status.getValue().get(0).toString()));
@@ -452,7 +452,7 @@ public class AzureConnector implements
                 GuardedString password = accessor.getPassword();
                 if (password != null) {
                     try {
-                        if (user.getPassword() != null && !user.getPassword().equals(password)) {
+                        if (user.getPassword() != null || user.getPasswordProfile() != null) {
                             user.setPassword(password);
                         }
                     } catch (Exception e) {

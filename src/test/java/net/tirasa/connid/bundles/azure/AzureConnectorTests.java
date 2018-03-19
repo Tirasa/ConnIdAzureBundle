@@ -265,11 +265,13 @@ public class AzureConnectorTests {
 
             // CREATE USER
             String username = UUID.randomUUID().toString();
+            Attribute password = AttributeBuilder.buildPassword(new GuardedString("Password123".toCharArray()));
+            Attribute newPassword = AttributeBuilder.buildPassword(new GuardedString("Password1234".toCharArray()));
 
             Set<Attribute> userAttrs = new HashSet<>();
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, username));
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_MAIL_NICKNAME, username));
-            userAttrs.add(AttributeBuilder.buildPassword(new GuardedString("Password123".toCharArray())));
+            userAttrs.add(password);
             userAttrs.add(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, testGroupUid));
 
             created = connector.create(ObjectClass.ACCOUNT, userAttrs, new OperationOptionsBuilder().build());
@@ -282,6 +284,19 @@ public class AzureConnectorTests {
 
             LOG.info("Created User with name {0} on service!",
                     user.getDisplayName());
+
+            // UPDATE USER PASSWORD
+            userAttrs.remove(password);
+            userAttrs.add(newPassword);
+            Uid updated = connector.update(
+                    ObjectClass.ACCOUNT, created, userAttrs, new OperationOptionsBuilder().build());
+            assertNotNull(updated);
+
+            // GET USER
+            user = client.getAuthenticated().getUser(updated.getUidValue());
+            assertNotNull(user);
+            assertEquals(user.getObjectId(), updated.getUidValue());
+            // can't test password update here, Azure API always return '"passwordProfile": null'
 
             // GET USER GROUPS
             List<Group> groupsForUser = client.getAuthenticated().getAllGroupsForUser(created.getUidValue());
@@ -304,7 +319,7 @@ public class AzureConnectorTests {
             groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_DISPLAY_NAME, groupName));
             groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_ID, testGroupUid));
 
-            Uid updated = connector.update(
+            updated = connector.update(
                     ObjectClass.GROUP, new Uid(testGroupUid), groupAttrs, new OperationOptionsBuilder().build());
             assertNotNull(updated);
             assertEquals(testGroupUid, updated.getUidValue());
@@ -422,7 +437,7 @@ public class AzureConnectorTests {
             final SearchResult searchResult = connector.search(ObjectClass.ACCOUNT, null, handler, oob.build());
             cookie = searchResult.getPagedResultsCookie();
         } while (cookie != null);
-        
+
         LOG.info("results : {0}", results);
 
         assertTrue(results.size() > 2);
