@@ -69,8 +69,8 @@ public class AzureUtils {
     }
 
     public static void wrapGeneralError(final String message, final Exception ex) {
-        String newMessage = message + " - "
-                + ex.getMessage() != null ? ex.getMessage() : "";
+        String newMessage = message
+                + (ex.getMessage() != null ? " - " + ex.getMessage() : "");
         LOG.error(ex, newMessage);
         throw ConnectorException.wrap(ex);
     }
