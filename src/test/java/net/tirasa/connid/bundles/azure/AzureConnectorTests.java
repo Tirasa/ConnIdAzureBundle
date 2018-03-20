@@ -347,13 +347,13 @@ public class AzureConnectorTests {
 
             Thread.sleep(2000);
 
-            // UPDATE USER
+            // UPDATE USER (using 'objectId' attribute)
             username = UUID.randomUUID().toString();
             boolean newStatusValue = false;
 
             userAttrs.clear();
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, username));
-            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_ID, testUserUid)); // important
+            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_ID, testUserUid));
             // '__ENABLE__' attribute update
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_ACCOUNT_ENABLED, newStatusValue));
 
@@ -363,15 +363,35 @@ public class AzureConnectorTests {
             assertEquals(created.getUidValue(), updated.getUidValue());
             assertNotEquals(user.getDisplayName(), username);
 
-            // GET NEW USER TO CHECK 'accountEnabled' UPDATE
+            // GET NEW USER (to check 'accountEnabled' update)
             assertNotEquals(user.getAccountEnabled(), newStatusValue);
             User updatedUser = client.getAuthenticated().getUser(testUserUid);
             assertEquals(updatedUser.getAccountEnabled(), newStatusValue);
 
+            LOG.info("Updated User with old name {0} and new name {1}",
+                    user.getDisplayName(), username);
+
+            // UPDATE USER (using 'userPrincipalName' attribute)
+            String anotherUsername = UUID.randomUUID().toString();
+            
+            userAttrs.clear();
+            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, anotherUsername));
+            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_PRINCIPAL_NAME, user.getUserPrincipalName()));
+
+            updated = connector.update(
+                    ObjectClass.ACCOUNT, new Uid(testUserUid), userAttrs, new OperationOptionsBuilder().build());
+            assertNotNull(updated);
+            assertEquals(created.getUidValue(), updated.getUidValue());
+            assertNotEquals(updatedUser.getDisplayName(), anotherUsername);
+
+            // GET NEW USER (to check update using 'userPrincipalName' attribute)
+            User anotherUpdatedUser = client.getAuthenticated().getUser(testUserUid);
+            assertEquals(anotherUpdatedUser.getUserPrincipalName(), user.getUserPrincipalName());
+
             testUserUid = updated.getUidValue();
 
             LOG.info("Updated User with old name {0} and new name {1}",
-                    user.getDisplayName(), username);
+                    user.getDisplayName(), anotherUsername);
 
             // GET ALL USERS
             List<User> users = client.getAuthenticated().getAllUsers();

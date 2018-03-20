@@ -36,6 +36,7 @@ import net.tirasa.connid.bundles.azure.dto.PasswordProfile;
 import net.tirasa.connid.bundles.azure.dto.User;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
@@ -598,12 +599,15 @@ public class AzureRestAPI {
     }
 
     private AzureObject doUpdate(final AzureObject obj) {
-        WebClient webClient = azureService.getWebclient(
-                (obj instanceof Group ? "groups" : "users") + "/" + obj.getObjectId(), null);
+        WebClient webClient;
         AzureObject updated = obj;
 
         if (updated instanceof User) {
             User updatedUser = User.class.cast(updated);
+            webClient = azureService.getWebclient("users/"
+                    + (StringUtils.isBlank(updatedUser.getObjectId())
+                    ? updatedUser.getUserPrincipalName()
+                    : updatedUser.getObjectId()), null);
 
             // handle PasswordProfile object - password update
             if ((updatedUser.getPassword() != null
@@ -615,6 +619,9 @@ public class AzureRestAPI {
             }
 
             updated = updatedUser;
+        } else {
+            webClient = azureService.getWebclient("groups/"
+                    + obj.getObjectId(), null);
         }
 
         try {

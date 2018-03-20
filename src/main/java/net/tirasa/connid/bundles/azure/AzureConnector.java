@@ -427,7 +427,11 @@ public class AzureConnector implements
             }
 
             User user = new User();
-            user.setObjectId(uid.getUidValue());
+            if (uid.getUidValue().contains("@")) {
+                user.setUserPrincipalName(uid.getUidValue());
+            } else {
+                user.setObjectId(uid.getUidValue());
+            }
 
             if (!uid.getUidValue().equals(userID)) {
                 LOG.info("Update - uid value different from user ID");
