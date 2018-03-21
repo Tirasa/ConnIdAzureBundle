@@ -595,7 +595,7 @@ public class AzureRestAPI {
             AzureUtils.handleGeneralError("While creating User", ex);
         }
 
-        return obj;
+        return body;
     }
 
     private AzureObject doUpdate(final AzureObject obj) {
@@ -605,9 +605,9 @@ public class AzureRestAPI {
         if (updated instanceof User) {
             User updatedUser = User.class.cast(updated);
             webClient = azureService.getWebclient("users/"
-                    + (StringUtils.isBlank(updatedUser.getObjectId())
-                    ? updatedUser.getUserPrincipalName()
-                    : updatedUser.getObjectId()), null);
+                    + (StringUtils.isBlank(updatedUser.getUserPrincipalName())
+                    ? updatedUser.getObjectId()
+                    : updatedUser.getUserPrincipalName()), null);
 
             // handle PasswordProfile object - password update
             if ((updatedUser.getPassword() != null

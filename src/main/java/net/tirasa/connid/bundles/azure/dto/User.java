@@ -981,4 +981,28 @@ public class User implements AzureObject {
         }
     }
 
+    @Override
+    public String toString() {
+        return "User{" + "objectId=" + objectId + ", displayName=" + displayName + ", objectType=" + objectType
+                + ", accountEnabled=" + accountEnabled + ", city=" + city + ", country=" + country + ", department="
+                + department + ", dirSyncEnabled=" + dirSyncEnabled + ", facsimileTelephoneNumber="
+                + facsimileTelephoneNumber + ", givenName=" + givenName + ", immutableId=" + immutableId + ", jobTitle="
+                + jobTitle + ", lastDirSyncTime=" + lastDirSyncTime + ", mail=" + mail + ", mailNickname="
+                + mailNickname + ", mobile=" + mobile + ", passwordPolicies=" + passwordPolicies
+                + ", physicalDeliveryOfficeName=" + physicalDeliveryOfficeName + ", postalCode=" + postalCode
+                + ", preferredLanguage=" + preferredLanguage + ", state=" + state + ", streetAddress=" + streetAddress
+                + ", surname=" + surname + ", telephoneNumber=" + telephoneNumber + ", usageLocation=" + usageLocation
+                + ", userPrincipalName=" + userPrincipalName + ", companyName=" + companyName + ", creationType="
+                + creationType + ", employeeId=" + employeeId + ", isCompromised=" + isCompromised
+                + ", onPremisesDistinguishedName=" + onPremisesDistinguishedName + ", onPremisesSecurityIdentifier="
+                + onPremisesSecurityIdentifier + ", refreshTokensValidFromDateTime=" + refreshTokensValidFromDateTime
+                + ", showInAddressList=" + showInAddressList + ", sipProxyAddress=" + sipProxyAddress + ", userType="
+                + userType + ", passwordProfile=" + passwordProfile + ", userIdentities=" + userIdentities
+                + ", signInNames=" + signInNames + ", otherMails=" + otherMails + ", provisionedPlans="
+                + provisionedPlans + ", provisioningErrors=" + provisioningErrors + ", proxyAddresses=" + proxyAddresses
+                + ", assignedLicenses=" + assignedLicenses + ", assignedPlans=" + assignedPlans + ", password="
+                + password + ", thumbnailPhoto=" + thumbnailPhoto + ", license=" + license + ", unlicense=" + unlicense
+                + '}';
+    }
+
 }

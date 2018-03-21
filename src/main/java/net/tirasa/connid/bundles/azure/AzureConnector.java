@@ -411,34 +411,16 @@ public class AzureConnector implements
         if (ObjectClass.ACCOUNT.equals(objectClass)) {
             Uid returnUid = uid;
 
-            // username
-            String userID = accessor.findString(AzureAttributes.USER_ID);
-            if (userID == null) {
-                userID = accessor.findString(Name.NAME);
-            }
-            String mailNickname = accessor.findString(AzureAttributes.USER_MAIL_NICKNAME);
             String displayName = accessor.findString(AzureAttributes.USER_DISPLAY_NAME);
             Attribute status = accessor.find(OperationalAttributes.ENABLE_NAME);
 
             if (displayName == null) {
-                AzureUtils.handleGeneralError("The "
-                        + AzureAttributes.USER_DISPLAY_NAME
+                AzureUtils.handleGeneralError("The " + AzureAttributes.USER_DISPLAY_NAME
                         + " property cannot be cleared during updates");
             }
 
             User user = new User();
-            if (uid.getUidValue().contains("@")) {
-                user.setUserPrincipalName(uid.getUidValue());
-            } else {
-                user.setObjectId(uid.getUidValue());
-            }
-
-            if (!uid.getUidValue().equals(userID)) {
-                LOG.info("Update - uid value different from user ID");
-
-                user.setDisplayName(displayName);
-                user.setMailNickname(mailNickname);
-            }
+            user.setObjectId(uid.getUidValue());
 
             if (status == null
                     || status.getValue() == null
@@ -482,7 +464,7 @@ public class AzureConnector implements
                     ownGroups.add(group.getObjectId());
                 }
             } catch (Exception ex) {
-                LOG.error(ex, "Could not list groups for user {0}", uid.getUidValue());
+                LOG.error(ex, "Could not list groups for User {0}", uid.getUidValue());
             }
 
             List<Object> groups = CollectionUtil.nullAsEmpty(accessor.findList(PredefinedAttributes.GROUPS_NAME));
@@ -490,10 +472,10 @@ public class AzureConnector implements
                 if (!ownGroups.contains(group.toString())) {
                     try {
                         client.getAuthenticated().addUserToGroup(returnUid.getUidValue(), group.toString());
-                        LOG.info("User added to group: {0} after update", group);
+                        LOG.ok("User added to group: {0} after update", group);
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError(
-                                "Could not add group : " + group + " to user : " + returnUid.getUidValue(), e);
+                                "Could not add group : " + group + " to User : " + returnUid.getUidValue(), e);
                     }
                 }
             }
@@ -501,10 +483,10 @@ public class AzureConnector implements
                 if (!groups.contains(group)) {
                     try {
                         client.getAuthenticated().deleteUserFromGroup(returnUid.getUidValue(), group);
-                        LOG.info("User removed from group: {0} after update", group);
+                        LOG.ok("User removed from group: {0} after update", group);
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError(
-                                "Could not remove group : " + group + " to user : " + returnUid.getUidValue(), e);
+                                "Could not remove group : " + group + " from User : " + returnUid.getUidValue(), e);
                     }
                 }
             }
