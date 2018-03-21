@@ -193,7 +193,7 @@ public class AzureConnector implements
                         users = client.getAuthenticated().getAllUsers();
                     }
                 } catch (Exception e) {
-                    AzureUtils.wrapGeneralError("While getting users!", e);
+                    AzureUtils.wrapGeneralError("While getting Users!", e);
                 }
 
                 for (User user : users) {
@@ -241,7 +241,7 @@ public class AzureConnector implements
                         groups = client.getAuthenticated().getAllGroups();
                     }
                 } catch (Exception e) {
-                    AzureUtils.wrapGeneralError("While getting groups!", e);
+                    AzureUtils.wrapGeneralError("While getting Groups!", e);
                 }
 
                 for (Group group : groups) {
@@ -258,7 +258,7 @@ public class AzureConnector implements
                     try {
                         result = client.getAuthenticated().getGroup(AttributeUtil.getAsStringValue(key));
                     } catch (Exception e) {
-                        AzureUtils.wrapGeneralError("While getting group!", e);
+                        AzureUtils.wrapGeneralError("While getting Group!", e);
                     }
                     handler.handle(fromGroup(result, attributesToGet));
                 }
@@ -300,7 +300,7 @@ public class AzureConnector implements
                 if (status == null
                         || status.getValue() == null
                         || status.getValue().isEmpty()) {
-                    LOG.warn("{0} attribute value not correct or not found, won't handle user status",
+                    LOG.warn("{0} attribute value not correct or not found, won't handle User status",
                             OperationalAttributes.ENABLE_NAME);
                 } else {
                     user.setAccountEnabled(Boolean.parseBoolean(status.getValue().get(0).toString()));
@@ -309,7 +309,7 @@ public class AzureConnector implements
                 user.fromAttributes(createAttributes);
                 client.getAuthenticated().createUser(user);
             } catch (Exception e) {
-                AzureUtils.wrapGeneralError("Could not create user : " + username, e);
+                AzureUtils.wrapGeneralError("Could not create User : " + username, e);
             }
 
             List<Object> groups = accessor.findList(PredefinedAttributes.GROUPS_NAME);
@@ -319,7 +319,7 @@ public class AzureConnector implements
                         client.getAuthenticated().addUserToGroup(user.getObjectId(), group.toString());
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError(
-                                "Could not add user :" + user.getObjectId() + " to group :" + group, e);
+                                "Could not add User :" + user.getObjectId() + " to Group :" + group, e);
                     }
                 }
             }
@@ -342,7 +342,7 @@ public class AzureConnector implements
                 group.fromAttributes(createAttributes);
                 client.getAuthenticated().createGroup(group);
             } catch (Exception e) {
-                AzureUtils.wrapGeneralError("Could not create group : " + groupName, e);
+                AzureUtils.wrapGeneralError("Could not create Group : " + groupName, e);
             }
 
             return new Uid(group.getObjectId());
@@ -374,20 +374,20 @@ public class AzureConnector implements
                     client.getAuthenticated().deleteUserFromGroup(uid.getUidValue(), group.getObjectId());
                 }
             } catch (Exception e) {
-                LOG.error("Could not delete user {0} from groups", uid.getUidValue());
+                LOG.error("Could not delete User {0} from Groups", uid.getUidValue());
             }
 
             try {
                 client.getAuthenticated().deleteUser(uid.getUidValue());
             } catch (Exception e) {
-                AzureUtils.wrapGeneralError("Could not delete user " + uid.getUidValue(), e);
+                AzureUtils.wrapGeneralError("Could not delete User " + uid.getUidValue(), e);
             }
 
         } else if (ObjectClass.GROUP.equals(objectClass)) {
             try {
                 client.getAuthenticated().deleteGroup(uid.getUidValue());
             } catch (Exception e) {
-                AzureUtils.wrapGeneralError("Could not delete group " + uid.getUidValue(), e);
+                AzureUtils.wrapGeneralError("Could not delete Group " + uid.getUidValue(), e);
             }
 
         } else {
@@ -425,7 +425,7 @@ public class AzureConnector implements
             if (status == null
                     || status.getValue() == null
                     || status.getValue().isEmpty()) {
-                LOG.warn("{0} attribute value not correct, can't handle user status update",
+                LOG.warn("{0} attribute value not correct, can't handle User  status update",
                         OperationalAttributes.ENABLE_NAME);
             } else {
                 user.setAccountEnabled(Boolean.parseBoolean(status.getValue().get(0).toString()));
@@ -443,7 +443,7 @@ public class AzureConnector implements
                         }
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError(
-                                "Could not update password for user " + uid.getUidValue(), e);
+                                "Could not update password for User " + uid.getUidValue(), e);
                     }
                 }
 
@@ -508,7 +508,7 @@ public class AzureConnector implements
             group.setObjectId(uid.getUidValue());
 
             if (!uid.getUidValue().equals(groupID)) {
-                LOG.info("Update - uid value different from group ID");
+                LOG.info("Update - uid value different from Group ID");
 
                 group.setMailNickname(mailNickname);
                 group.setDisplayName(displayName);
