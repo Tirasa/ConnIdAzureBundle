@@ -14,8 +14,8 @@ The Azure bundle is part of the [ConnId](http://connid.tirasa.net) project.
 
 ```XML
 <dependency>
-  <groupId>org.connid.bundles</groupId>
-  <artifactId>org.connid.bundles.azure</artifactId>
+  <groupId>net.tirasa.connid.bundles</groupId>
+  <artifactId>net.tirasa.connid.bundles.azure</artifactId>
   <version>${connid.azure.version}</version>
 </dependency>
 ```
