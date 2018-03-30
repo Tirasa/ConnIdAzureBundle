@@ -4,8 +4,8 @@ ConnIdAzureBundle
 The Azure bundle is part of the [ConnId](http://connid.tirasa.net) project.
 
 <a href="https://travis-ci.org/Tirasa/ConnIdAzureBundle"><img src="https://api.travis-ci.org/Tirasa/ConnIdAzureBundle.png"/></a>
-<a href="https://maven-badges.herokuapp.com/maven-central/net.tirasa.connid.bundles/net.tirasa.connid.bundles.azure">
-  <img src="https://maven-badges.herokuapp.com/maven-central/net.tirasa.connid.bundles/net.tirasa.connid.bundles.azure/badge.svg"/>
+<a href="#">
+  <img src="https://img.shields.io/maven-central/v/net.tirasa.connid.bundles/net.tirasa.connid.bundles.azure.svg"/>
 </a>
 
 ## How to get it
