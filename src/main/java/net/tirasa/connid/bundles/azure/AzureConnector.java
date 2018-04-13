@@ -21,7 +21,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.tirasa.connid.bundles.azure.dto.AssignedLicense;
 import net.tirasa.connid.bundles.azure.dto.Group;
+import net.tirasa.connid.bundles.azure.dto.License;
 import net.tirasa.connid.bundles.azure.dto.PagedGroups;
 import net.tirasa.connid.bundles.azure.dto.PagedUsers;
 import net.tirasa.connid.bundles.azure.dto.User;
@@ -290,6 +292,7 @@ public class AzureConnector implements
             GuardedString password = accessor.findGuardedString(OperationalAttributes.PASSWORD_NAME);
             String displayName = accessor.findString(AzureAttributes.USER_DISPLAY_NAME);
             Attribute status = accessor.find(OperationalAttributes.ENABLE_NAME);
+            List<Object> licenses = accessor.findList(AzureAttributes.AZURE_LICENSE_NAME);
 
             try {
                 // handle mandatory attributes (some attributes are handled by Service class)
@@ -312,14 +315,27 @@ public class AzureConnector implements
                 AzureUtils.wrapGeneralError("Could not create User : " + username, e);
             }
 
+            // memberships
             List<Object> groups = accessor.findList(PredefinedAttributes.GROUPS_NAME);
             if (!CollectionUtil.isEmpty(groups)) {
                 for (Object group : groups) {
                     try {
                         client.getAuthenticated().addUserToGroup(user.getObjectId(), group.toString());
                     } catch (Exception e) {
-                        AzureUtils.wrapGeneralError(
-                                "Could not add User :" + user.getObjectId() + " to Group :" + group, e);
+                        LOG.error(e, "Could not add User {0} to Group {1} ", user.getObjectId(), group);
+                    }
+                }
+            }
+
+            // licenses
+            if (!CollectionUtil.isEmpty(licenses)) {
+                for (Object license : licenses) {
+                    // executing an assignment per single license in order to skip errors from invalid licenses
+                    try {
+                        client.getAuthenticated().assignLicense(user.getObjectId(),
+                                License.create(Collections.singletonList(String.class.cast(license)), true));
+                    } catch (RuntimeException ex) {
+                        LOG.error(ex, "While assigning license {0} to user {1}", String.class.cast(license), user);
                     }
                 }
             }
@@ -413,6 +429,7 @@ public class AzureConnector implements
 
             String displayName = accessor.findString(AzureAttributes.USER_DISPLAY_NAME);
             Attribute status = accessor.find(OperationalAttributes.ENABLE_NAME);
+            List<Object> licenses = accessor.findList(AzureAttributes.AZURE_LICENSE_NAME);
 
             if (displayName == null) {
                 AzureUtils.handleGeneralError("The " + AzureAttributes.USER_DISPLAY_NAME
@@ -472,10 +489,9 @@ public class AzureConnector implements
                 if (!ownGroups.contains(group.toString())) {
                     try {
                         client.getAuthenticated().addUserToGroup(returnUid.getUidValue(), group.toString());
-                        LOG.ok("User added to group: {0} after update", group);
+                        LOG.ok("User added to Group: {0} after update", group);
                     } catch (Exception e) {
-                        AzureUtils.wrapGeneralError(
-                                "Could not add group : " + group + " to User : " + returnUid.getUidValue(), e);
+                        LOG.error(e, "Could not add User {0} to Group {1} ", returnUid.getUidValue(), group);
                     }
                 }
             }
@@ -485,10 +501,57 @@ public class AzureConnector implements
                         client.getAuthenticated().deleteUserFromGroup(returnUid.getUidValue(), group);
                         LOG.ok("User removed from group: {0} after update", group);
                     } catch (Exception e) {
-                        AzureUtils.wrapGeneralError(
-                                "Could not remove group : " + group + " from User : " + returnUid.getUidValue(), e);
+                        LOG.error(e, "Could not remove Group {0} from User {1} ", group, returnUid.getUidValue());
                     }
                 }
+            }
+
+            // licenses
+            User updatedUser = client.getAuthenticated().getUser(returnUid.getUidValue());
+            if (updatedUser == null) {
+                LOG.error("While reading user {0} after update in order to handle licenses update",
+                        returnUid.getUidValue());
+            } else {
+                List<String> assignedSkuIds = new ArrayList<>();
+                for (AssignedLicense assignedLicense : updatedUser.getAssignedLicenses()) {
+                    assignedSkuIds.add(assignedLicense.getSkuId());
+                }
+
+                if (CollectionUtil.isEmpty(licenses)) {
+                    if (!assignedSkuIds.isEmpty()) {
+                        client.getAuthenticated().assignLicense(returnUid.getUidValue(),
+                                License.create(assignedSkuIds, false));
+                    }
+                } else {
+                    List<String> toAdd = new ArrayList<>();
+                    List<String> toRemove = new ArrayList<>();
+                    List<String> newLicenses = new ArrayList<>();
+                    for (Object license : licenses) {
+                        newLicenses.add(String.class.cast(license));
+                    }
+                    for (String assignedSkuId : assignedSkuIds) {
+                        if (!newLicenses.contains(assignedSkuId)) {
+                            toRemove.add(assignedSkuId);
+                        }
+                    }
+                    for (String newLicense : newLicenses) {
+                        if (!assignedSkuIds.contains(newLicense)) {
+                            // executing an assignment per single license in order to skip errors from invalid licenses
+                            try {
+                                client.getAuthenticated().assignLicense(user.getObjectId(),
+                                        License.create(Collections.singletonList(newLicense), true));
+                            } catch (RuntimeException ex) {
+                                LOG.error(ex, "While assigning license {0} to user {1}", newLicense, user);
+                            }
+                        }
+                    }
+
+                    if (!toRemove.isEmpty()) {
+                        client.getAuthenticated().assignLicense(returnUid.getUidValue(),
+                                License.create(toRemove, false));
+                    }
+                }
+
             }
 
             return returnUid;

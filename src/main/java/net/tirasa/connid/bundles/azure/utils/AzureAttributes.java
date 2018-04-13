@@ -48,10 +48,6 @@ public final class AzureAttributes {
 
     public static final String USER_MAIL_NICKNAME = "mailNickname";
 
-    public static final String USER_LICENSE = "license";
-
-    public static final String USER_UNLICENSE = "unlicense";
-
     public static final String GROUP_ID = "objectId";
 
     public static final String GROUP_DISPLAY_NAME = "displayName";
@@ -61,6 +57,14 @@ public final class AzureAttributes {
     public static final String GROUP_MAIL_NICKNAME = "mailNickname";
 
     public static final String GROUP_SECURITY_ENABLED = "securityEnabled";
+
+    public static final String AZURE_LICENSE_NAME = "azureLicense";
+
+    public static final String USER_USAGE_LOCATION = "usageLocation";
+
+    public static boolean isAzureLicenses(String attrName) {
+        return AZURE_LICENSE_NAME.equalsIgnoreCase(attrName);
+    }
 
     public static final List<String> GROUP_REQUIRED_ATTRS = new ArrayList<String>() {
 
@@ -109,16 +113,6 @@ public final class AzureAttributes {
                     .setMultiValued(StringUtil.isNotBlank(type)
                             && type.contains(AzureService.METADATA_COLLECTION_VALUE)).build());
         }
-
-        // assignedLicenses management (add / remove)
-        userBuilder.addAttributeInfo(AttributeInfoBuilder.define(USER_LICENSE)
-                .setRequired(USER_REQUIRED_ATTRS.contains(USER_LICENSE))
-                .setType(getCorrectType("String"))
-                .setMultiValued(true).build());
-        userBuilder.addAttributeInfo(AttributeInfoBuilder.define(USER_UNLICENSE)
-                .setRequired(USER_REQUIRED_ATTRS.contains(USER_UNLICENSE))
-                .setType(getCorrectType("String"))
-                .setMultiValued(true).build());
 
         user = userBuilder.build();
         builder.defineObjectClass(user);

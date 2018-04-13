@@ -177,12 +177,6 @@ public class User implements AzureObject {
     @JsonIgnore
     private byte[] thumbnailPhoto;
 
-    @JsonIgnore
-    private List<String> license = new ArrayList<>();
-
-    @JsonIgnore
-    private List<String> unlicense = new ArrayList<>();
-
     /**
      * @return The immutableId of this user.
      */
@@ -687,22 +681,6 @@ public class User implements AzureObject {
         this.userIdentities = userIdentities;
     }
 
-    public List<String> getLicense() {
-        return license;
-    }
-
-    public void setLicense(final List<String> license) {
-        this.license = license;
-    }
-
-    public List<String> getUnlicense() {
-        return unlicense;
-    }
-
-    public void setUnlicense(final List<String> unlicense) {
-        this.unlicense = unlicense;
-    }
-
     @Override
     public String getDisplayName() {
         return displayName;
@@ -966,14 +944,6 @@ public class User implements AzureObject {
                 assignedLicenses =
                         new ArrayList<>((List<AssignedLicense>) (Object) values);
                 break;
-            case "license":
-                license =
-                        new ArrayList<>((List<String>) (Object) values);
-                break;
-            case "unlicense":
-                unlicense =
-                        new ArrayList<>((List<String>) (Object) values);
-                break;
             case "assignedPlans":
                 assignedPlans =
                         new ArrayList<>((List<AssignedPlan>) (Object) values);
@@ -1001,7 +971,7 @@ public class User implements AzureObject {
                 + ", signInNames=" + signInNames + ", otherMails=" + otherMails + ", provisionedPlans="
                 + provisionedPlans + ", provisioningErrors=" + provisioningErrors + ", proxyAddresses=" + proxyAddresses
                 + ", assignedLicenses=" + assignedLicenses + ", assignedPlans=" + assignedPlans + ", password="
-                + password + ", thumbnailPhoto=" + thumbnailPhoto + ", license=" + license + ", unlicense=" + unlicense
+                + password + ", thumbnailPhoto=" + thumbnailPhoto
                 + '}';
     }
 

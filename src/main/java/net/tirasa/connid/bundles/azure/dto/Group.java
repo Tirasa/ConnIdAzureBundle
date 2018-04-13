@@ -300,4 +300,14 @@ public class Group implements AzureObject {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Group{" + "objectId=" + objectId + ", displayName=" + displayName + ", objectType=" + objectType
+                + ", description=" + description + ", dirSyncEnabled=" + dirSyncEnabled + ", lastDirSyncTime="
+                + lastDirSyncTime + ", mail=" + mail + ", mailNickname=" + mailNickname + ", mailEnabled=" + mailEnabled
+                + ", onPremisesSecurityIdentifier=" + onPremisesSecurityIdentifier + ", provisioningErrors="
+                + provisioningErrors + ", proxyAddresses=" + proxyAddresses + ", securityEnabled=" + securityEnabled
+                + '}';
+    }
+
 }

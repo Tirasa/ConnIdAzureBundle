@@ -104,7 +104,7 @@ public class AzureRestAPI {
     /**
      *
      * @param username
-     * @return List of Users
+     * @return List of Users with specified username
      */
     public List<User> getUsersByName(final String username) {
         WebClient webClient = azureService.getWebclient("users",
@@ -130,7 +130,7 @@ public class AzureRestAPI {
     /**
      *
      * @param groupId
-     * @return List of Users
+     * @return List of Users, members of specified group
      */
     public List<User> getAllMembersOfGroup(final String groupId) {
         WebClient webClient = azureService.getWebclient("groups/" + groupId + "/members", null);
@@ -254,7 +254,7 @@ public class AzureRestAPI {
     /**
      *
      * @param groupName
-     * @return
+     * @return List of Groups
      */
     public List<Group> getGroupsByName(final String groupName) {
         WebClient webClient = azureService.getWebclient("groups/",
@@ -277,7 +277,7 @@ public class AzureRestAPI {
     /**
      *
      * @param groupnamePart
-     * @return List of Groups
+     * @return List of Groups whose displayName attribute starts with specified string
      */
     public List<Group> getGroupsStartsWith(final String groupnamePart) {
         WebClient webClient = azureService.getWebclient("groups/",
@@ -296,7 +296,7 @@ public class AzureRestAPI {
     /**
      *
      * @param attribute
-     * @return List of Groups
+     * @return List of Groups, ordered by specified attribute
      */
     public List<Group> getGroupsOrderdByAsc(final String attribute) {
         String attributeToUse = attribute;
@@ -319,7 +319,7 @@ public class AzureRestAPI {
     /**
      *
      * @param user
-     * @return User
+     * @return created User
      */
     public User createUser(final User user) {
         return User.class.cast(doCreate(user));
@@ -328,7 +328,7 @@ public class AzureRestAPI {
     /**
      *
      * @param group
-     * @return Group
+     * @return created Group
      */
     public Group createGroup(final Group group) {
         return Group.class.cast(doCreate(group));
@@ -337,7 +337,7 @@ public class AzureRestAPI {
     /**
      *
      * @param user
-     * @return User
+     * @return updated User
      */
     public User updateUser(final User user) {
         return User.class.cast(doUpdate(user));
@@ -346,7 +346,7 @@ public class AzureRestAPI {
     /**
      *
      * @param group
-     * @return Group
+     * @return updated Group
      */
     public Group updateGroup(final Group group) {
         return Group.class.cast(doUpdate(group));
@@ -421,7 +421,7 @@ public class AzureRestAPI {
                 }
             }
         } catch (Exception ex) {
-            AzureUtils.handleGeneralError("While getting current tenante subscriptions", ex);
+            AzureUtils.handleGeneralError("While getting current tenant subscriptions", ex);
         }
         return result;
     }

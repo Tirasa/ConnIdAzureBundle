@@ -25,88 +25,16 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class License {
 
-    private List<Assigned> addLicenses = new ArrayList<>();
+    private List<AssignedLicense> addLicenses = new ArrayList<>();
 
     private List<String> removeLicenses = new ArrayList<>();
 
-    public static class Assigned {
-
-        private List<String> disabledPlans = new ArrayList<>();
-
-        private String skuId;
-
-        @JsonProperty("disabledPlans")
-        public List<String> getDisabledPlans() {
-            return disabledPlans;
-        }
-
-        public void setDisabledPlans(final List<String> disabledPlans) {
-            this.disabledPlans = disabledPlans;
-        }
-
-        @JsonProperty("skuId")
-        public String getSkuId() {
-            return skuId;
-        }
-
-        public void setSkuId(final String skuId) {
-            this.skuId = skuId;
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            Assigned assigned = (Assigned) o;
-            return skuId.equals(assigned.skuId);
-
-        }
-
-        @Override
-        public int hashCode() {
-            return skuId.hashCode();
-        }
-    }
-
-    public static License create(final License license) {
-        License result = license;
-        if (license == null) {
-            result = new License();
-            result.setAddLicenses(new ArrayList<License.Assigned>());
-            result.setRemoveLicenses(new ArrayList<String>());
-        }
-        return result;
-    }
-
-    public static License create(final List<String> skuIds, final boolean add) {
-        License result = new License();
-
-        if (add) {
-            ArrayList<Assigned> toAdd = new ArrayList<>();
-            for (String skuId : skuIds) {
-                License.Assigned assigned = new License.Assigned();
-                assigned.setSkuId(skuId);
-                toAdd.add(assigned);
-            }
-            result.setAddLicenses(toAdd);
-        } else {
-            result.setRemoveLicenses(skuIds);
-        }
-
-        return result;
-    }
-
     @JsonProperty("addLicenses")
-    public List<Assigned> getAddLicenses() {
+    public List<AssignedLicense> getAddLicenses() {
         return addLicenses;
     }
 
-    public void setAddLicenses(final List<Assigned> addLicenses) {
+    public void setAddLicenses(final List<AssignedLicense> addLicenses) {
         this.addLicenses = addLicenses;
     }
 
@@ -117,6 +45,34 @@ public class License {
 
     public void setRemoveLicenses(final List<String> removeLicenses) {
         this.removeLicenses = removeLicenses;
+    }
+
+    public static License create(final License license) {
+        License result = license;
+        if (license == null) {
+            result = new License();
+            result.setAddLicenses(new ArrayList<AssignedLicense>());
+            result.setRemoveLicenses(new ArrayList<String>());
+        }
+        return result;
+    }
+
+    public static License create(final List<String> skuIds, final boolean add) {
+        License result = new License();
+
+        if (add) {
+            ArrayList<AssignedLicense> toAdd = new ArrayList<>();
+            for (String skuId : skuIds) {
+                AssignedLicense assigned = new AssignedLicense();
+                assigned.setSkuId(skuId);
+                toAdd.add(assigned);
+            }
+            result.setAddLicenses(toAdd);
+        } else {
+            result.setRemoveLicenses(skuIds);
+        }
+
+        return result;
     }
 
 }
