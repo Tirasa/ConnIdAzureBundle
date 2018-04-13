@@ -77,7 +77,7 @@ public class AzureConnectorTests {
 
     protected static ConnectorFacade connector;
 
-    private static String AVAILABLE_LICENSE;
+    private static String VALID_LICENSE;
 
     private static String USAGE_LOCATION;
 
@@ -106,7 +106,7 @@ public class AzureConnectorTests {
 
         connector = newFacade();
 
-        AVAILABLE_LICENSE = PROPS.getProperty("availableLicense");
+        VALID_LICENSE = PROPS.getProperty("availableLicense");
         USAGE_LOCATION = PROPS.getProperty("usageLocation");
 
         assertNotNull(CONF);
@@ -118,9 +118,10 @@ public class AzureConnectorTests {
         assertNotNull(CONF.getRedirectURI());
         assertNotNull(CONF.getResourceURI());
         assertNotNull(CONF.getUsername());
+    }
 
-        assertNotNull(AVAILABLE_LICENSE);
-        assertNotNull(USAGE_LOCATION);
+    private boolean testLicenses() {
+        return VALID_LICENSE != null && USAGE_LOCATION != null;
     }
 
     private static ConnectorFacade newFacade() {
@@ -284,10 +285,12 @@ public class AzureConnectorTests {
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_MAIL_NICKNAME, username));
             userAttrs.add(password);
             userAttrs.add(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, testGroupUid));
-            // add a license
-            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_USAGE_LOCATION, USAGE_LOCATION));
-            userAttrs.add(AttributeBuilder.build(AzureAttributes.AZURE_LICENSE_NAME,
-                    Collections.singletonList(AVAILABLE_LICENSE)));
+            if (testLicenses()) {
+                // add a license
+                userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_USAGE_LOCATION, USAGE_LOCATION));
+                userAttrs.add(AttributeBuilder.build(AzureAttributes.AZURE_LICENSE_NAME,
+                        Collections.singletonList(VALID_LICENSE)));
+            }
 
             created = connector.create(ObjectClass.ACCOUNT, userAttrs, new OperationOptionsBuilder().build());
             assertNotNull(created);
@@ -299,9 +302,11 @@ public class AzureConnectorTests {
             assertNotNull(user);
             assertEquals(user.getObjectId(), created.getUidValue());
             assertEquals(user.getAccountEnabled(), true);
-            assertFalse(user.getAssignedLicenses().isEmpty());
-            assertEquals(user.getAssignedLicenses().get(0).getSkuId(), AVAILABLE_LICENSE);
-            assertEquals(user.getUsageLocation(), USAGE_LOCATION);
+            if (testLicenses()) {
+                assertFalse(user.getAssignedLicenses().isEmpty());
+                assertEquals(user.getAssignedLicenses().get(0).getSkuId(), VALID_LICENSE);
+                assertEquals(user.getUsageLocation(), USAGE_LOCATION);
+            }
 
             LOG.info("Created User with name {0} on service!",
                     user.getDisplayName());
@@ -375,9 +380,11 @@ public class AzureConnectorTests {
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_ID, testUserUid));
             // '__ENABLE__' attribute update
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_ACCOUNT_ENABLED, newStatusValue));
-            // licenses update - remove all
-            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_USAGE_LOCATION, USAGE_LOCATION));
-            userAttrs.add(AttributeBuilder.build(AzureAttributes.AZURE_LICENSE_NAME, Collections.emptyList()));
+            if (testLicenses()) {
+                // licenses update - remove all
+                userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_USAGE_LOCATION, USAGE_LOCATION));
+                userAttrs.add(AttributeBuilder.build(AzureAttributes.AZURE_LICENSE_NAME, Collections.emptyList()));
+            }
 
             updated = connector.update(
                     ObjectClass.ACCOUNT, new Uid(testUserUid), userAttrs, new OperationOptionsBuilder().build());
@@ -389,8 +396,10 @@ public class AzureConnectorTests {
             assertNotEquals(user.getAccountEnabled(), newStatusValue);
             User updatedUser = client.getAuthenticated().getUser(testUserUid);
             assertEquals(updatedUser.getAccountEnabled(), newStatusValue);
-            assertTrue(updatedUser.getAssignedLicenses().isEmpty());
-            assertEquals(updatedUser.getUsageLocation(), USAGE_LOCATION);
+            if (testLicenses()) {
+                assertTrue(updatedUser.getAssignedLicenses().isEmpty());
+                assertEquals(updatedUser.getUsageLocation(), USAGE_LOCATION);
+            }
 
             LOG.info("Updated User with old name {0} and new name {1}",
                     user.getDisplayName(), username);
@@ -543,7 +552,9 @@ public class AzureConnectorTests {
             LOG.info("Attributes group : {0}", groupFound.toAttributes());
 
             // TEST LICENSES
-            testLicenses(client, testUser);
+            if (testLicenses()) {
+                doTestLicenses(client, testUser);
+            }
 
             // GET ALL
             List<User> users = client.getAuthenticated().getAllUsers();
@@ -646,18 +657,19 @@ public class AzureConnectorTests {
         }
     }
 
-    private void testLicenses(final AzureService client, final String testUser) {
-        // GET SIGNED-IN USER SUBSCRIPTIONS
-        List<String> subscriptions = client.getAuthenticated().getCurrentTenantSubscriptions();
-        assertNotNull(subscriptions);
-        LOG.info("Current tenant subscriptions : {0}", subscriptions);
+    private void doTestLicenses(final AzureService client, final String testUser) {
+        // GET SIGNED-IN USER LICENSES
+        List<String> licenses = client.getAuthenticated().getCurrentTenantSkuIds(true);
+        assertNotNull(licenses);
+        LOG.info("Current enabled tenant licenses : {0}", licenses);
 
-        if (subscriptions.isEmpty()) {
-            LOG.info("No subscriptions  for current account, skipping licenses test!");
+        if (licenses.isEmpty()) {
+            LOG.info("No licenses for current tenant, skipping licenses test!");
         } else {
+            assertTrue(licenses.contains(VALID_LICENSE));
+
             // ASSIGN LICENSE TO USER
-            License assignedLicense =
-                    License.create(Arrays.asList(AVAILABLE_LICENSE), true);
+            License assignedLicense = License.create(Arrays.asList(VALID_LICENSE), true);
             LOG.info("New assignedLicense : {0}", assignedLicense);
             client.getAuthenticated().assignLicense(testUser, assignedLicense);
 
@@ -666,12 +678,11 @@ public class AzureConnectorTests {
             assertNotNull(userWithNewLicense.getObjectId());
             assertFalse(userWithNewLicense.getAssignedLicenses().isEmpty());
             assertNotNull(userWithNewLicense.getAssignedLicenses().get(0).getSkuId());
-            assertTrue(userWithNewLicense.getAssignedLicenses().get(0).getSkuId().equals(AVAILABLE_LICENSE));
+            assertTrue(userWithNewLicense.getAssignedLicenses().get(0).getSkuId().equals(VALID_LICENSE));
             LOG.info("User with new license : {0}", userWithNewLicense);
 
             // REMOVE LICENSE FROM USER
-            assignedLicense =
-                    License.create(Arrays.asList(AVAILABLE_LICENSE), false);
+            assignedLicense = License.create(Arrays.asList(VALID_LICENSE), false);
             LOG.info("New assignedLicense : {0}", assignedLicense);
             client.getAuthenticated().assignLicense(testUser, assignedLicense);
 

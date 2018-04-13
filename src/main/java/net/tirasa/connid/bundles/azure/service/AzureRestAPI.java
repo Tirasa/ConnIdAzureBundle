@@ -33,6 +33,7 @@ import net.tirasa.connid.bundles.azure.dto.MemberOf;
 import net.tirasa.connid.bundles.azure.dto.PagedGroups;
 import net.tirasa.connid.bundles.azure.dto.PagedUsers;
 import net.tirasa.connid.bundles.azure.dto.PasswordProfile;
+import net.tirasa.connid.bundles.azure.dto.SubscribedSku;
 import net.tirasa.connid.bundles.azure.dto.User;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
@@ -407,22 +408,44 @@ public class AzureRestAPI {
     /**
      * Added from 20-02-2018
      *
-     * @return the subscriptions available for the tenant of the signed-in user
+     * @return the existing subscriptions for the current tenant
      */
-    public List<String> getCurrentTenantSubscriptions() {
+    public List<SubscribedSku> getCurrentTenantSubscriptions() {
         WebClient webClient = azureService.getWebclient("subscribedSkus", null);
 
-        List<String> result = new ArrayList<>();
+        List<SubscribedSku> results = null;
         try {
-            JsonNode responseObj = azureService.doGetFromAzure(webClient);
-            if (responseObj != null && responseObj.isArray()) {
-                for (JsonNode skuId : responseObj.findValues("skuId")) {
-                    result.add(skuId.textValue());
+            results = Arrays.asList(AzureUtils.MAPPER.readValue(
+                    azureService.doGetFromAzure(webClient).toString(), SubscribedSku[].class));
+        } catch (IOException ex) {
+            AzureUtils.handleGeneralError("While getting current tenant available subscriptions", ex);
+        }
+
+        return results;
+    }
+
+    /**
+     * Added from 13-04-2018
+     *
+     * @param onlyEnabled
+     * @return the existing skuIds for the current tenant, only those with "Enabled" status if onlyEnabled
+     */
+    public List<String> getCurrentTenantSkuIds(final boolean onlyEnabled) {
+        List<String> result = new ArrayList<>();
+
+        List<SubscribedSku> subscriptions = getCurrentTenantSubscriptions();
+        try {
+            for (SubscribedSku subscription : subscriptions) {
+                if (onlyEnabled && subscription.getCapabilityStatus().equalsIgnoreCase("enabled")) {
+                    result.add(subscription.getSkuId());
+                } else if (!onlyEnabled) {
+                    result.add(subscription.getSkuId());
                 }
             }
         } catch (Exception ex) {
-            AzureUtils.handleGeneralError("While getting current tenant subscriptions", ex);
+            AzureUtils.handleGeneralError("While getting current tenant available licenses", ex);
         }
+
         return result;
     }
 
