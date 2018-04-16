@@ -18,27 +18,27 @@ package net.tirasa.connid.bundles.azure.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
+import org.identityconnectors.common.CollectionUtil;
+import org.identityconnectors.framework.common.objects.Attribute;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class SubscribedSku {
+public class SubscribedSku implements AzureObject {
+
+    @JsonProperty
+    private String objectId;
 
     @JsonProperty
     private String capabilityStatus;
 
     @JsonProperty
     private int consumedUnits;
-
-    @JsonProperty
-    private String objectId;
-
-    @JsonProperty
-    private PrepaidUnit prepaidUnits;
-
-    @JsonProperty
-    private List<ServicePlan> servicePlans = new ArrayList<>();
 
     @JsonProperty
     private String skuId;
@@ -48,6 +48,12 @@ public class SubscribedSku {
 
     @JsonProperty
     private String appliesTo;
+
+    @JsonProperty
+    private PrepaidUnit prepaidUnits;
+
+    @JsonProperty
+    private List<ServicePlan> servicePlans = new ArrayList<>();
 
     public String getCapabilityStatus() {
         return capabilityStatus;
@@ -111,6 +117,71 @@ public class SubscribedSku {
 
     public void setAppliesTo(final String appliesTo) {
         this.appliesTo = appliesTo;
+    }
+
+    @Override
+    public Set<Attribute> toAttributes() throws IllegalArgumentException, IllegalAccessException {
+        Set<Attribute> attrs = new HashSet<>();
+
+        Field[] fields = SubscribedSku.class.getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            attrs.add(AzureAttributes.buildAttributeFromClassField(field, this).build());
+        }
+
+        return attrs;
+    }
+
+    @Override
+    public void fromAttributes(Set<Attribute> attributes) {
+        for (Attribute attribute : attributes) {
+            if (!CollectionUtil.isEmpty(attribute.getValue())) {
+                List<Object> values = attribute.getValue();
+                String name = attribute.getName();
+
+                doSetAttribute(name, values);
+            }
+
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void doSetAttribute(final String name, final List<Object> values) {
+        Object value = values.get(0);
+        switch (name) {
+            case "objectId":
+                objectId =
+                        String.class.cast(value);
+                break;
+            case "capabilityStatus":
+                capabilityStatus =
+                        String.class.cast(value);
+                break;
+            case "consumedUnits":
+                consumedUnits =
+                        Integer.class.cast(value);
+                break;
+            case "skuId":
+                skuId =
+                        String.class.cast(value);
+                break;
+            case "skuPartNumber":
+                skuPartNumber =
+                        String.class.cast(value);
+                break;
+            case "appliesTo":
+                appliesTo =
+                        String.class.cast(value);
+                break;
+            case "prepaidUnits":
+                prepaidUnits =
+                        PrepaidUnit.class.cast(value);
+                break;
+            case "servicePlans":
+                servicePlans =
+                        new ArrayList<>((List<ServicePlan>) (Object) values);
+                break;
+        }
     }
 
     @Override

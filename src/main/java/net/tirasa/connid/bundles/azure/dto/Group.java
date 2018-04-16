@@ -194,12 +194,10 @@ public class Group implements AzureObject {
         this.objectType = objectType;
     }
 
-    @Override
     public String getDisplayName() {
         return displayName;
     }
 
-    @Override
     public void setDisplayName(final String displayName) {
         this.displayName = displayName;
     }
@@ -296,7 +294,6 @@ public class Group implements AzureObject {
                 securityEnabled =
                         Boolean.class.cast(value);
                 break;
-
         }
     }
 

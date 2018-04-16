@@ -681,19 +681,17 @@ public class User implements AzureObject {
         this.userIdentities = userIdentities;
     }
 
-    @Override
     public String getDisplayName() {
         return displayName;
+    }
+
+    public void setDisplayName(final String displayName) {
+        this.displayName = displayName;
     }
 
     @Override
     public String getObjectId() {
         return objectId;
-    }
-
-    @Override
-    public void setDisplayName(final String displayName) {
-        this.displayName = displayName;
     }
 
     @Override

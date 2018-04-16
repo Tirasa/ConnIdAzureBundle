@@ -26,6 +26,7 @@ import net.tirasa.connid.bundles.azure.dto.Group;
 import net.tirasa.connid.bundles.azure.dto.License;
 import net.tirasa.connid.bundles.azure.dto.PagedGroups;
 import net.tirasa.connid.bundles.azure.dto.PagedUsers;
+import net.tirasa.connid.bundles.azure.dto.SubscribedSku;
 import net.tirasa.connid.bundles.azure.dto.User;
 import net.tirasa.connid.bundles.azure.service.AzureService;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
@@ -263,6 +264,23 @@ public class AzureConnector implements
                         AzureUtils.wrapGeneralError("While getting Group!", e);
                     }
                     handler.handle(fromGroup(result, attributesToGet));
+                }
+            }
+        } else if (new ObjectClass(AzureAttributes.AZURE_LICENSE_NAME).equals(objectClass)) {
+            if (key == null) {
+                List<SubscribedSku> subscribedSkus = null;
+                try {
+                    subscribedSkus = client.getAuthenticated().getCurrentTenantSubscriptions();
+                } catch (Exception e) {
+                    AzureUtils.wrapGeneralError("While getting subscriptions!", e);
+                }
+
+                for (SubscribedSku subscribedSku : subscribedSkus) {
+                    handler.handle(fromLicense(subscribedSku, attributesToGet));
+                }
+
+                if (handler instanceof SearchResultsHandler) {
+                    ((SearchResultsHandler) handler).handleResult(new SearchResult(null, -1));
                 }
             }
         } else {
@@ -658,6 +676,34 @@ public class AzureConnector implements
 
         if (attributesToGet.contains(AzureAttributes.GROUP_ID)) {
             builder.addAttribute(AttributeBuilder.build(AzureAttributes.GROUP_ID, group.getObjectId()));
+        }
+
+        return builder.build();
+    }
+
+    private ConnectorObject fromLicense(final SubscribedSku subscribedSku, final Set<String> attributesToGet) {
+        ConnectorObjectBuilder builder = new ConnectorObjectBuilder();
+        builder.setObjectClass(new ObjectClass(AzureAttributes.AZURE_LICENSE_NAME));
+        builder.setUid(subscribedSku.getObjectId());
+        builder.setName(subscribedSku.getSkuId());
+
+        try {
+            for (Attribute toAttribute : subscribedSku.toAttributes()) {
+                String attributeName = toAttribute.getName();
+                for (String attributeToGetName : attributesToGet) {
+                    if (attributeName.equals(attributeToGetName)) {
+                        builder.addAttribute(toAttribute);
+                        break;
+                    }
+                }
+            }
+        } catch (IllegalArgumentException | IllegalAccessException ex) {
+            LOG.error(ex, "While converting to attributes");
+        }
+
+        if (attributesToGet.contains(AzureAttributes.AZURE_LICENSE_NAME)) {
+            builder.addAttribute(AttributeBuilder.build(AzureAttributes.AZURE_LICENSE_NAME,
+                    subscribedSku.getObjectId()));
         }
 
         return builder.build();

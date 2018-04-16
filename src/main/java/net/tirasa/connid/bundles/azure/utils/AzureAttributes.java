@@ -62,9 +62,7 @@ public final class AzureAttributes {
 
     public static final String USER_USAGE_LOCATION = "usageLocation";
 
-    public static boolean isAzureLicenses(String attrName) {
-        return AZURE_LICENSE_NAME.equalsIgnoreCase(attrName);
-    }
+    public static final String SUBSCRIBED_SKU_ID = "objectId";
 
     public static final List<String> GROUP_REQUIRED_ATTRS = new ArrayList<String>() {
 

@@ -20,11 +20,7 @@ import org.identityconnectors.framework.common.objects.Attribute;
 
 public interface AzureObject {
 
-    String getDisplayName();
-
     String getObjectId();
-
-    void setDisplayName(String displayName);
 
     void setObjectId(String objectId);
 
