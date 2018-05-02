@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import net.tirasa.connid.bundles.azure.dto.AvailableExtensionProperties;
 import net.tirasa.connid.bundles.azure.dto.AzureError;
 import net.tirasa.connid.bundles.azure.dto.AzureObject;
@@ -41,6 +42,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
+import org.identityconnectors.common.security.SecurityUtil;
 
 public class AzureRestAPI {
 
@@ -98,7 +100,8 @@ public class AzureRestAPI {
      * @return User
      */
     public User getUser(final String userId) {
-        WebClient webClient = azureService.getWebclient("users/" + userId, null);
+        WebClient webClient = azureService.getWebclient("users", null)
+                .path(userId);
         return User.class.cast(doGetObject("users", webClient));
     }
 
@@ -134,7 +137,8 @@ public class AzureRestAPI {
      * @return List of Users, members of specified group
      */
     public List<User> getAllMembersOfGroup(final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups/" + groupId + "/members", null);
+        WebClient webClient = azureService.getWebclient("groups", null)
+                .path(groupId).path("members");
         List<User> users = null;
         try {
             users = Arrays.asList(AzureUtils.MAPPER.readValue(
@@ -151,7 +155,8 @@ public class AzureRestAPI {
      * @param groupId
      */
     public void addUserToGroup(final String userId, final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups/" + groupId + "/$links/members", null);
+        WebClient webClient = azureService.getWebclient("groups", null)
+                .path(groupId).path("$links").path("members");
 
         WebClient webClientUser = azureService.getWebclient("directoryObjects/" + userId, null);
         ObjectNode json = AzureUtils.MAPPER.createObjectNode();
@@ -170,9 +175,11 @@ public class AzureRestAPI {
      * @param groupId
      */
     public void deleteUserFromGroup(final String userId, final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups/" + groupId + "/$links/members/" + userId, null);
+        WebClient webClient = azureService.getWebclient("groups", null)
+                .path(groupId).path("$links").path("members").path(userId);
+
         Response response = webClient.delete();
-        if (response.getStatus() != 204) {
+        if (response.getStatus() != Status.NO_CONTENT.getStatusCode()) {
             throw new NoSuchEntityException(userId);
         }
     }
@@ -223,7 +230,8 @@ public class AzureRestAPI {
      * @return List of Groups for specified User
      */
     public List<Group> getAllGroupsForUser(final String userId) {
-        WebClient webClient = azureService.getWebclient("users/" + userId + "/$links/memberOf", null);
+        WebClient webClient = azureService.getWebclient("users", null)
+                .path(userId).path("$links").path("memberOf");
 
         List<Group> groups = new ArrayList<>();
         try {
@@ -248,7 +256,8 @@ public class AzureRestAPI {
      * @return Group
      */
     public Group getGroup(final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups/" + groupId, null);
+        WebClient webClient = azureService.getWebclient("groups", null)
+                .path(groupId);
         return Group.class.cast(doGetObject("groups", webClient));
     }
 
@@ -258,7 +267,7 @@ public class AzureRestAPI {
      * @return List of Groups
      */
     public List<Group> getGroupsByName(final String groupName) {
-        WebClient webClient = azureService.getWebclient("groups/",
+        WebClient webClient = azureService.getWebclient("groups",
                 "$filter="
                 + AzureAttributes.GROUP_DISPLAY_NAME
                 + " eq '"
@@ -281,7 +290,7 @@ public class AzureRestAPI {
      * @return List of Groups whose displayName attribute starts with specified string
      */
     public List<Group> getGroupsStartsWith(final String groupnamePart) {
-        WebClient webClient = azureService.getWebclient("groups/",
+        WebClient webClient = azureService.getWebclient("groups",
                 "$filter=startswith(displayName,'" + groupnamePart + "')");
 
         List<Group> groups = null;
@@ -358,10 +367,7 @@ public class AzureRestAPI {
      * @param userId
      */
     public void deleteUser(final String userId) {
-        WebClient webClient = azureService.getWebclient("users/" + userId, null);
-        if (webClient.delete().getStatus() != 204) {
-            throw new NoSuchEntityException(userId);
-        }
+        doDelete(userId, "users");
     }
 
     /**
@@ -369,10 +375,7 @@ public class AzureRestAPI {
      * @param groupId
      */
     public void deleteGroup(final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups/" + groupId, null);
-        if (webClient.delete().getStatus() != 204) {
-            throw new NoSuchEntityException(groupId);
-        }
+        doDelete(groupId, "groups");
     }
 
     /**
@@ -393,7 +396,7 @@ public class AzureRestAPI {
 
             Response response = webClient.post(AzureUtils.MAPPER.writeValueAsString(body));
             String responseAsString = response.readEntity(String.class);
-            if (response.getStatus() != 200) {
+            if (response.getStatus() != Status.OK.getStatusCode()) {
                 AzureError.sendError("get available extension properties for User " + userId, response);
             }
             availableExtensionProperties =
@@ -456,12 +459,13 @@ public class AzureRestAPI {
      * @param assignedLicense
      */
     public void assignLicense(final String userId, final License assignedLicense) {
-        WebClient webClient = azureService.getWebclient("users/" + userId + "/assignLicense", null);
+        WebClient webClient = azureService.getWebclient("users", null)
+                .path(userId).path("assignLicense");
 
         Response response;
         try {
             response = webClient.post(AzureUtils.MAPPER.writeValueAsString(assignedLicense));
-            if (response.getStatus() != 200) {
+            if (response.getStatus() != Status.OK.getStatusCode()) {
                 AzureError.sendError("assign license to User " + userId, response);
             }
         } catch (IOException ex) {
@@ -487,7 +491,7 @@ public class AzureRestAPI {
 
             Response response = webClient.post(AzureUtils.MAPPER.writeValueAsString(memberOf));
             String responseAsString = response.readEntity(String.class);
-            if (response.getStatus() != 200) {
+            if (response.getStatus() != Status.OK.getStatusCode()) {
                 AzureError.sendError("check whether member " + memberId + " is member of " + groupId, response);
             }
             result = AzureUtils.MAPPER.readTree(responseAsString).get("value").asBoolean();
@@ -509,8 +513,8 @@ public class AzureRestAPI {
      */
     public List<String> getMemberGroups(final String resourceCollection, final String resourceId,
             final boolean securityEnabledOnly) {
-        WebClient webClient =
-                azureService.getWebclient(resourceCollection + "/" + resourceId + "/getMemberGroups", null);
+        WebClient webClient = azureService.getWebclient(resourceCollection, null)
+                .path(resourceId).path("getMemberGroups");
 
         return doGetMembers(webClient, resourceId, securityEnabledOnly);
     }
@@ -526,8 +530,8 @@ public class AzureRestAPI {
      */
     public List<String> getMemberObjects(final String resourceCollection, final String resourceId,
             final boolean securityEnabledOnly) {
-        WebClient webClient =
-                azureService.getWebclient(resourceCollection + "/" + resourceId + "/getMemberObjects", null);
+        WebClient webClient = azureService.getWebclient(resourceCollection, null)
+                .path(resourceId).path("getMemberObjects");
 
         return doGetMembers(webClient, resourceId, securityEnabledOnly);
     }
@@ -541,7 +545,7 @@ public class AzureRestAPI {
 
             Response response = webClient.post(AzureUtils.MAPPER.writeValueAsString(body));
             String responseAsString = response.readEntity(String.class);
-            if (response.getStatus() != 200) {
+            if (response.getStatus() != Status.OK.getStatusCode()) {
                 AzureError.sendError("get members groups for resource " + resourceId, response);
             }
             JsonNode responseObj = AzureUtils.MAPPER.readTree(responseAsString);
@@ -571,7 +575,7 @@ public class AzureRestAPI {
                 user.setAccountEnabled(true);
             }
 
-            checkUserValid(user);
+            validateUser(user);
 
             if (StringUtil.isBlank(user.getUserPrincipalName())) {
                 // I'll do this here because it can't be dont in Azure PropagationActions, because REST connector
@@ -594,7 +598,7 @@ public class AzureRestAPI {
             group.setSecurityEnabled(true); // When using Graph API, we can only create pure security groups
 
             // handle other required attributes
-            checkGroupValid(group);
+            validateGroup(group);
         }
 
         Response response;
@@ -634,7 +638,7 @@ public class AzureRestAPI {
 
             // handle PasswordProfile object - password update
             if ((updatedUser.getPassword() != null
-                    && StringUtil.isNotBlank(AzureUtils.getPasswordValue(updatedUser.getPassword())))) {
+                    && StringUtil.isNotBlank(SecurityUtil.decrypt(updatedUser.getPassword())))) {
                 PasswordProfile passwordProfile = new PasswordProfile();
                 passwordProfile.setPassword(updatedUser.getPassword());
                 passwordProfile.setForceChangePasswordNextLogin(false); // important for password updating
@@ -655,6 +659,13 @@ public class AzureRestAPI {
         }
 
         return obj;
+    }
+
+    private void doDelete(final String userId, final String type) {
+        if (azureService.getWebclient(type, null)
+                .path(userId).delete().getStatus() != Status.NO_CONTENT.getStatusCode()) {
+            throw new NoSuchEntityException(userId);
+        }
     }
 
     private List<User> doGetAllUsers(final WebClient webClient) {
@@ -718,7 +729,7 @@ public class AzureRestAPI {
         return obj;
     }
 
-    private void checkUserValid(final User user) {
+    private void validateUser(final User user) {
         if (user.getAccountEnabled() == null) {
             AzureUtils.handleGeneralError("User 'accountEnabled' value is required");
         } else if (StringUtil.isBlank(user.getObjectType())) {
@@ -728,12 +739,12 @@ public class AzureRestAPI {
         } else if (StringUtil.isBlank(user.getMailNickname())) {
             AzureUtils.handleGeneralError("User 'mainNickname' value is required");
         } else if (user.getPassword() == null
-                || StringUtil.isBlank(AzureUtils.getPasswordValue(user.getPassword()))) {
+                || StringUtil.isBlank(SecurityUtil.decrypt(user.getPassword()))) {
             AzureUtils.handleGeneralError("User 'password' value is required");
         }
     }
 
-    private void checkGroupValid(final Group group) {
+    private void validateGroup(final Group group) {
         if (StringUtil.isBlank(group.getDisplayName())) {
             AzureUtils.handleGeneralError("Group 'displayName' value is required");
         } else if (group.getMailEnabled() == null) {

@@ -722,10 +722,9 @@ public class User implements AzureObject {
             if (!CollectionUtil.isEmpty(attribute.getValue())) {
                 List<Object> values = attribute.getValue();
                 String name = attribute.getName();
-
+                
                 doSetAttribute(name, values);
             }
-
         }
     }
 

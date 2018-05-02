@@ -42,7 +42,7 @@ public class PasswordProfile {
     }
 
     public void setPassword(final GuardedString password) {
-        this.password = password != null ? AzureUtils.getPasswordValue(password) : null;
+        this.password = password != null ? SecurityUtil.decrypt(password) : null;
     }
 
     public Boolean getForceChangePasswordNextLogin() {

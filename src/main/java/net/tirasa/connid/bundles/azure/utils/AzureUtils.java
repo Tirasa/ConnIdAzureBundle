@@ -44,20 +44,6 @@ public class AzureUtils {
         return guardedString;
     }
 
-    public static String getPasswordValue(final GuardedString guardedString) {
-        final StringBuilder clearPwd = new StringBuilder();
-        GuardedString.Accessor accessor =
-                new GuardedString.Accessor() {
-
-            @Override
-            public void access(final char[] clearChars) {
-                clearPwd.append(clearChars);
-            }
-        };
-        guardedString.access(accessor);
-        return clearPwd.toString();
-    }
-
     public static void handleGeneralError(final String message) {
         LOG.error("General error : {0}", message);
         throw new ConnectorException(message);

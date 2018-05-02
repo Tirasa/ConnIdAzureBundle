@@ -112,7 +112,7 @@ public class AzureConnector implements
 
     @Override
     public void test() {
-        LOG.ok("Test connector");
+        LOG.ok("connector TEST");
 
         if (configuration != null) {
 
@@ -130,7 +130,7 @@ public class AzureConnector implements
 
     @Override
     public Schema schema() {
-        LOG.ok("Building schema definition ");
+        LOG.ok("Building SCHEMA definition");
 
         if (schema == null) {
             schema = AzureAttributes.buildSchema();
@@ -154,7 +154,7 @@ public class AzureConnector implements
 
     @Override
     public void executeQuery(ObjectClass objectClass, Filter query, ResultsHandler handler, OperationOptions options) {
-        LOG.ok("Connector object execute query ");
+        LOG.ok("Connector READ");
 
         Attribute key = null;
         if (query instanceof EqualsFilter) {
@@ -293,7 +293,7 @@ public class AzureConnector implements
 
     @Override
     public Uid create(ObjectClass objectClass, Set<Attribute> createAttributes, OperationOptions options) {
-        LOG.ok("Resource object create ");
+        LOG.ok("Connector CREATE");
 
         if (createAttributes == null || createAttributes.isEmpty()) {
             AzureUtils.handleGeneralError("Set of Attributes value is null or empty");
@@ -390,7 +390,7 @@ public class AzureConnector implements
 
     @Override
     public void delete(ObjectClass objectClass, Uid uid, OperationOptions options) {
-        LOG.ok("Resource object delete ");
+        LOG.ok("Connector DELETE");
 
         if (StringUtil.isBlank(uid.getUidValue())) {
             LOG.error("Uid not provided or empty ");
@@ -434,7 +434,7 @@ public class AzureConnector implements
 
     @Override
     public Uid update(ObjectClass objectClass, Uid uid, Set<Attribute> replaceAttributes, OperationOptions options) {
-        LOG.ok("Resource object update ");
+        LOG.ok("Connector UPDATE");
 
         if (replaceAttributes == null || replaceAttributes.isEmpty()) {
             AzureUtils.handleGeneralError("Set of Attributes value is null or empty");
