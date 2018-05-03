@@ -39,7 +39,7 @@ import net.tirasa.connid.bundles.azure.dto.Group;
 import net.tirasa.connid.bundles.azure.dto.License;
 import net.tirasa.connid.bundles.azure.dto.PagedUsers;
 import net.tirasa.connid.bundles.azure.dto.User;
-import net.tirasa.connid.bundles.azure.service.AzureService;
+import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.service.NoSuchEntityException;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
@@ -131,7 +131,7 @@ public class AzureConnectorTests {
         return factory.newInstance(impl);
     }
 
-    private AzureService newClient() {
+    private AzureClient newClient() {
         return CONN.getClient();
     }
 
@@ -180,7 +180,7 @@ public class AzureConnectorTests {
 
     private void cleanup(
             final ConnectorFacade connector,
-            final AzureService client,
+            final AzureClient client,
             final String testUserUid,
             final String testGroupUid) {
         if (testUserUid != null) {
@@ -219,7 +219,7 @@ public class AzureConnectorTests {
     }
 
     private void cleanup(
-            final AzureService client,
+            final AzureClient client,
             final String testUserUid,
             final String testGroupUid) {
         if (testUserUid != null) {
@@ -248,7 +248,7 @@ public class AzureConnectorTests {
     @Test
     public void crud() {
         ConnectorFacade connector = newFacade();
-        AzureService client = newClient();
+        AzureClient client = newClient();
 
         String testGroupUid = null;
         String testUserUid = null;
@@ -498,7 +498,7 @@ public class AzureConnectorTests {
 
     @Test
     public void serviceTest() {
-        AzureService client = newClient();
+        AzureClient client = newClient();
 
         String testGroup = null;
         String testUser = null;
@@ -657,7 +657,7 @@ public class AzureConnectorTests {
         }
     }
 
-    private void doTestLicenses(final AzureService client, final String testUser) {
+    private void doTestLicenses(final AzureClient client, final String testUser) {
         // GET SIGNED-IN USER LICENSES
         List<String> licenses = client.getAuthenticated().getCurrentTenantSkuIds(true);
         assertNotNull(licenses);

@@ -44,14 +44,23 @@ import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.SecurityUtil;
 
-public class AzureRestAPI {
+public class AzureClient extends AzureService {
 
-    private static final Log LOG = Log.getLog(AzureRestAPI.class);
+    private static final Log LOG = Log.getLog(AzureClient.class);
 
-    private final AzureService azureService;
+    public AzureClient(final String authority,
+            final String clientId,
+            final String username,
+            final String password,
+            final String resourceURI,
+            final String domain) {
+        super(authority, clientId, username, password, resourceURI, domain);
+    }
 
-    public AzureRestAPI(final AzureService azureService) {
-        this.azureService = azureService;
+    public AzureClient getAuthenticated() {
+        checkAuth();
+
+        return this;
     }
 
     /**
@@ -59,7 +68,7 @@ public class AzureRestAPI {
      * @return List of Users
      */
     public List<User> getAllUsers() {
-        WebClient webClient = azureService.getWebclient("users", null);
+        WebClient webClient = getWebclient("users", null);
         return doGetAllUsers(webClient);
     }
 
@@ -69,7 +78,7 @@ public class AzureRestAPI {
      * @return paged list of Users
      */
     public PagedUsers getAllUsers(final int pageSize) {
-        WebClient webClient = azureService.getWebclient("users",
+        WebClient webClient = getWebclient("users",
                 "$top="
                 + String.valueOf(pageSize));
 
@@ -84,7 +93,7 @@ public class AzureRestAPI {
      * @return paged list of Users
      */
     public PagedUsers getAllUsersNextPage(final int pageSize, final String skipToken, final Boolean backward) {
-        WebClient webClient = azureService.getWebclient("users",
+        WebClient webClient = getWebclient("users",
                 "$top="
                 + String.valueOf(pageSize)
                 + (StringUtil.isNotBlank(skipToken)
@@ -100,7 +109,7 @@ public class AzureRestAPI {
      * @return User
      */
     public User getUser(final String userId) {
-        WebClient webClient = azureService.getWebclient("users", null)
+        WebClient webClient = getWebclient("users", null)
                 .path(userId);
         return User.class.cast(doGetObject("users", webClient));
     }
@@ -111,7 +120,7 @@ public class AzureRestAPI {
      * @return List of Users with specified username
      */
     public List<User> getUsersByName(final String username) {
-        WebClient webClient = azureService.getWebclient("users",
+        WebClient webClient = getWebclient("users",
                 "$filter="
                 + AzureAttributes.USER_DISPLAY_NAME
                 + " eq '"
@@ -124,7 +133,7 @@ public class AzureRestAPI {
         List<User> users = null;
         try {
             users = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    azureService.doGetFromAzure(webClient).toString(), User[].class));
+                    doGetFromAzure(webClient).toString(), User[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Groups", ex);
         }
@@ -137,12 +146,12 @@ public class AzureRestAPI {
      * @return List of Users, members of specified group
      */
     public List<User> getAllMembersOfGroup(final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups", null)
+        WebClient webClient = getWebclient("groups", null)
                 .path(groupId).path("members");
         List<User> users = null;
         try {
             users = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    azureService.doGetFromAzure(webClient).toString(), User[].class));
+                    doGetFromAzure(webClient).toString(), User[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Users", ex);
         }
@@ -155,10 +164,10 @@ public class AzureRestAPI {
      * @param groupId
      */
     public void addUserToGroup(final String userId, final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups", null)
+        WebClient webClient = getWebclient("groups", null)
                 .path(groupId).path("$links").path("members");
 
-        WebClient webClientUser = azureService.getWebclient("directoryObjects/" + userId, null);
+        WebClient webClientUser = getWebclient("directoryObjects/" + userId, null);
         ObjectNode json = AzureUtils.MAPPER.createObjectNode();
         json.set("url", json.textNode(webClientUser.getCurrentURI().toString()));
 
@@ -175,7 +184,7 @@ public class AzureRestAPI {
      * @param groupId
      */
     public void deleteUserFromGroup(final String userId, final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups", null)
+        WebClient webClient = getWebclient("groups", null)
                 .path(groupId).path("$links").path("members").path(userId);
 
         Response response = webClient.delete();
@@ -189,7 +198,7 @@ public class AzureRestAPI {
      * @return List of Groups
      */
     public List<Group> getAllGroups() {
-        WebClient webClient = azureService.getWebclient("groups", null);
+        WebClient webClient = getWebclient("groups", null);
         return doGetAllGroups(webClient);
     }
 
@@ -199,7 +208,7 @@ public class AzureRestAPI {
      * @return paged list of Groups
      */
     public PagedGroups getAllGroups(final int pageSize) {
-        WebClient webClient = azureService.getWebclient("groups",
+        WebClient webClient = getWebclient("groups",
                 "$top="
                 + String.valueOf(pageSize));
 
@@ -214,7 +223,7 @@ public class AzureRestAPI {
      * @return paged list of Groups
      */
     public PagedGroups getAllGroupsNextPage(final int pageSize, final String skipToken, final Boolean backward) {
-        WebClient webClient = azureService.getWebclient("groups",
+        WebClient webClient = getWebclient("groups",
                 "$top="
                 + String.valueOf(pageSize)
                 + (StringUtil.isNotBlank(skipToken)
@@ -230,13 +239,13 @@ public class AzureRestAPI {
      * @return List of Groups for specified User
      */
     public List<Group> getAllGroupsForUser(final String userId) {
-        WebClient webClient = azureService.getWebclient("users", null)
+        WebClient webClient = getWebclient("users", null)
                 .path(userId).path("$links").path("memberOf");
 
         List<Group> groups = new ArrayList<>();
         try {
-            JsonNode json = azureService.doGetFromAzure(webClient);
-            List<String> groupIds = azureService.extractUsersFromGroupMemberships(json);
+            JsonNode json = doGetFromAzure(webClient);
+            List<String> groupIds = extractUsersFromGroupMemberships(json);
             for (String groupId : groupIds) {
                 Group group = getGroup(groupId);
                 if (group != null) {
@@ -256,7 +265,7 @@ public class AzureRestAPI {
      * @return Group
      */
     public Group getGroup(final String groupId) {
-        WebClient webClient = azureService.getWebclient("groups", null)
+        WebClient webClient = getWebclient("groups", null)
                 .path(groupId);
         return Group.class.cast(doGetObject("groups", webClient));
     }
@@ -267,7 +276,7 @@ public class AzureRestAPI {
      * @return List of Groups
      */
     public List<Group> getGroupsByName(final String groupName) {
-        WebClient webClient = azureService.getWebclient("groups",
+        WebClient webClient = getWebclient("groups",
                 "$filter="
                 + AzureAttributes.GROUP_DISPLAY_NAME
                 + " eq '"
@@ -277,7 +286,7 @@ public class AzureRestAPI {
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    azureService.doGetFromAzure(webClient).toString(), Group[].class));
+                    doGetFromAzure(webClient).toString(), Group[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Groups", ex);
         }
@@ -290,13 +299,13 @@ public class AzureRestAPI {
      * @return List of Groups whose displayName attribute starts with specified string
      */
     public List<Group> getGroupsStartsWith(final String groupnamePart) {
-        WebClient webClient = azureService.getWebclient("groups",
+        WebClient webClient = getWebclient("groups",
                 "$filter=startswith(displayName,'" + groupnamePart + "')");
 
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    azureService.doGetFromAzure(webClient).toString(), Group[].class));
+                    doGetFromAzure(webClient).toString(), Group[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Groups", ex);
         }
@@ -313,13 +322,13 @@ public class AzureRestAPI {
         if (StringUtil.isBlank(attributeToUse)) {
             attributeToUse = "displayName";
         }
-        WebClient webClient = azureService.getWebclient("groups/",
+        WebClient webClient = getWebclient("groups/",
                 "$orderby=" + attributeToUse);
 
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    azureService.doGetFromAzure(webClient).toString(), Group[].class));
+                    doGetFromAzure(webClient).toString(), Group[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Users", ex);
         }
@@ -387,7 +396,7 @@ public class AzureRestAPI {
      */
     public AvailableExtensionProperties getAvailableExtensionProperties(final String userId,
             final boolean isSyncedFromOnPremises) {
-        WebClient webClient = azureService.getWebclient("getAvailableExtensionProperties", null);
+        WebClient webClient = getWebclient("getAvailableExtensionProperties", null);
 
         AvailableExtensionProperties availableExtensionProperties = null;
         try {
@@ -414,12 +423,12 @@ public class AzureRestAPI {
      * @return the existing subscriptions for the current tenant
      */
     public List<SubscribedSku> getCurrentTenantSubscriptions() {
-        WebClient webClient = azureService.getWebclient("subscribedSkus", null);
+        WebClient webClient = getWebclient("subscribedSkus", null);
 
         List<SubscribedSku> results = null;
         try {
             results = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    azureService.doGetFromAzure(webClient).toString(), SubscribedSku[].class));
+                    doGetFromAzure(webClient).toString(), SubscribedSku[].class));
         } catch (IOException ex) {
             AzureUtils.handleGeneralError("While getting current tenant available subscriptions", ex);
         }
@@ -459,7 +468,7 @@ public class AzureRestAPI {
      * @param assignedLicense
      */
     public void assignLicense(final String userId, final License assignedLicense) {
-        WebClient webClient = azureService.getWebclient("users", null)
+        WebClient webClient = getWebclient("users", null)
                 .path(userId).path("assignLicense");
 
         Response response;
@@ -481,7 +490,7 @@ public class AzureRestAPI {
      * @return whether a specified user, group, contact, or service principal is a member of a specified group
      */
     public Boolean isMemberOf(final String memberId, final String groupId) {
-        WebClient webClient = azureService.getWebclient("isMemberOf", null);
+        WebClient webClient = getWebclient("isMemberOf", null);
 
         Boolean result = null;
         try {
@@ -513,7 +522,7 @@ public class AzureRestAPI {
      */
     public List<String> getMemberGroups(final String resourceCollection, final String resourceId,
             final boolean securityEnabledOnly) {
-        WebClient webClient = azureService.getWebclient(resourceCollection, null)
+        WebClient webClient = getWebclient(resourceCollection, null)
                 .path(resourceId).path("getMemberGroups");
 
         return doGetMembers(webClient, resourceId, securityEnabledOnly);
@@ -530,7 +539,7 @@ public class AzureRestAPI {
      */
     public List<String> getMemberObjects(final String resourceCollection, final String resourceId,
             final boolean securityEnabledOnly) {
-        WebClient webClient = azureService.getWebclient(resourceCollection, null)
+        WebClient webClient = getWebclient(resourceCollection, null)
                 .path(resourceId).path("getMemberObjects");
 
         return doGetMembers(webClient, resourceId, securityEnabledOnly);
@@ -562,7 +571,7 @@ public class AzureRestAPI {
     }
 
     private AzureObject doCreate(final AzureObject obj) {
-        WebClient webClient = azureService.getWebclient(
+        WebClient webClient = getWebclient(
                 (obj instanceof Group ? "groups" : "users"), null);
         AzureObject body = obj;
 
@@ -581,7 +590,7 @@ public class AzureRestAPI {
                 // I'll do this here because it can't be dont in Azure PropagationActions, because REST connector
                 // does not have Azure "domain" info in connector configurations list 
                 // (as it would do a real full Azure Connector) 
-                user.setUserPrincipalName(user.getMailNickname() + "@" + azureService.getDomain());
+                user.setUserPrincipalName(user.getMailNickname() + "@" + getDomain());
             }
 
             // handle passwordProfile object
@@ -601,6 +610,7 @@ public class AzureRestAPI {
             validateGroup(group);
         }
 
+        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
         Response response;
         try {
             response = webClient.post(AzureUtils.MAPPER.writeValueAsString(body));
@@ -631,7 +641,7 @@ public class AzureRestAPI {
 
         if (updated instanceof User) {
             User updatedUser = User.class.cast(updated);
-            webClient = azureService.getWebclient("users/"
+            webClient = getWebclient("users/"
                     + (StringUtils.isBlank(updatedUser.getUserPrincipalName())
                     ? updatedUser.getObjectId()
                     : updatedUser.getUserPrincipalName()), null);
@@ -647,10 +657,11 @@ public class AzureRestAPI {
 
             updated = updatedUser;
         } else {
-            webClient = azureService.getWebclient("groups/"
+            webClient = getWebclient("groups/"
                     + obj.getObjectId(), null);
         }
 
+        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
         try {
             WebClient.getConfig(webClient).getRequestContext().put("use.async.http.conduit", true);
             webClient.invoke("PATCH", AzureUtils.MAPPER.writeValueAsString(updated));
@@ -662,17 +673,18 @@ public class AzureRestAPI {
     }
 
     private void doDelete(final String userId, final String type) {
-        if (azureService.getWebclient(type, null)
+        if (getWebclient(type, null)
                 .path(userId).delete().getStatus() != Status.NO_CONTENT.getStatusCode()) {
             throw new NoSuchEntityException(userId);
         }
     }
 
     private List<User> doGetAllUsers(final WebClient webClient) {
+        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
         List<User> users = null;
         try {
             users = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    azureService.doGetFromAzure(webClient).toString(), User[].class));
+                    doGetFromAzure(webClient).toString(), User[].class));
         } catch (IOException ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Users", ex);
         }
@@ -680,48 +692,54 @@ public class AzureRestAPI {
     }
 
     private List<Group> doGetAllGroups(final WebClient webClient) {
+        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    azureService.doGetFromAzure(webClient).toString(), Group[].class));
+                    doGetFromAzure(webClient).toString(), Group[].class));
         } catch (IOException ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Groups", ex);
         }
         return groups;
     }
 
-    private AzurePagedObject getAllPagedObjects(final String type, final WebClient webClient,
+    private AzurePagedObject getAllPagedObjects(final String type,
+            final WebClient webClient,
             final String skipToken) {
+        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
         AzurePagedObject pagedObj = null;
+
         if (type.equals("users")) {
             PagedUsers pagedUsers = new PagedUsers();
             pagedUsers.setUsers(doGetAllUsers(webClient));
             pagedUsers.setSkipToken(
-                    StringUtil.isNotBlank(skipToken) ? skipToken : azureService.getPagedResultsSkipToken());
+                    StringUtil.isNotBlank(skipToken) ? skipToken : getPagedResultsSkipToken());
             pagedObj = pagedUsers;
         } else if (type.equals("groups")) {
             PagedGroups pagedGroups = new PagedGroups();
             pagedGroups.setGroups(doGetAllGroups(webClient));
             pagedGroups.setSkipToken(
-                    StringUtil.isNotBlank(skipToken) ? skipToken : azureService.getPagedResultsSkipToken());
+                    StringUtil.isNotBlank(skipToken) ? skipToken : getPagedResultsSkipToken());
             pagedObj = pagedGroups;
         }
         return pagedObj;
     }
 
     private AzureObject doGetObject(final String type, final WebClient webClient) {
+        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
         AzureObject obj = null;
+        
         if (type.equals("users")) {
             try {
                 obj = AzureUtils.MAPPER.readValue(
-                        azureService.doGetFromAzure(webClient).toString(), User.class);
+                        doGetFromAzure(webClient).toString(), User.class);
             } catch (IOException ex) {
                 AzureUtils.handleGeneralError("While converting from JSON to User", ex);
             }
         } else if (type.equals("groups")) {
             try {
                 obj = AzureUtils.MAPPER.readValue(
-                        azureService.doGetFromAzure(webClient).toString(), Group.class);
+                        doGetFromAzure(webClient).toString(), Group.class);
             } catch (IOException ex) {
                 AzureUtils.handleGeneralError("While converting from JSON to Group", ex);
             }

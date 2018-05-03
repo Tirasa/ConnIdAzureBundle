@@ -705,11 +705,13 @@ public class User implements AzureObject {
 
         Field[] fields = User.class.getDeclaredFields();
         for (Field field : fields) {
-            field.setAccessible(true);
-            if (field.getName().equals(AzureAttributes.USER_PASSWORD_PROFILE) && passwordProfile != null) {
-                attrs.addAll(passwordProfile.toAttributes());
-            } else {
-                attrs.add(AzureAttributes.buildAttributeFromClassField(field, this).build());
+            if (field.getAnnotation(JsonIgnore.class) == null) {
+                field.setAccessible(true);
+                if (field.getName().equals(AzureAttributes.USER_PASSWORD_PROFILE) && passwordProfile != null) {
+                    attrs.addAll(passwordProfile.toAttributes());
+                } else {
+                    attrs.add(AzureAttributes.buildAttributeFromClassField(field, this).build());
+                }
             }
         }
 
@@ -722,7 +724,7 @@ public class User implements AzureObject {
             if (!CollectionUtil.isEmpty(attribute.getValue())) {
                 List<Object> values = attribute.getValue();
                 String name = attribute.getName();
-                
+
                 doSetAttribute(name, values);
             }
         }

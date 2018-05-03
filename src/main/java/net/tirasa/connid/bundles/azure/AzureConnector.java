@@ -28,7 +28,7 @@ import net.tirasa.connid.bundles.azure.dto.PagedGroups;
 import net.tirasa.connid.bundles.azure.dto.PagedUsers;
 import net.tirasa.connid.bundles.azure.dto.SubscribedSku;
 import net.tirasa.connid.bundles.azure.dto.User;
-import net.tirasa.connid.bundles.azure.service.AzureService;
+import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
 import org.identityconnectors.common.CollectionUtil;
@@ -77,7 +77,7 @@ public class AzureConnector implements
 
     private static final Log LOG = Log.getLog(AzureConnector.class);
 
-    private AzureService client;
+    private AzureClient client;
 
     @Override
     public Configuration getConfiguration() {
@@ -91,7 +91,7 @@ public class AzureConnector implements
         this.configuration = (AzureConnectorConfiguration) configuration;
         this.configuration.validate();
 
-        client = new AzureService(
+        client = new AzureClient(
                 this.configuration.getAuthority(),
                 this.configuration.getClientId(),
                 this.configuration.getUsername(),
@@ -487,7 +487,7 @@ public class AzureConnector implements
                 returnUid = new Uid(user.getObjectId());
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError(
-                        "Could not create User " + uid.getUidValue() + " from attributes ", e);
+                        "Could not update User " + uid.getUidValue() + " from attributes ", e);
             }
 
             // memberships
@@ -602,7 +602,7 @@ public class AzureConnector implements
                 returnUid = new Uid(group.getObjectId());
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError(
-                        "Could not create Group " + uid.getUidValue() + " from attributes ", e);
+                        "Could not update Group " + uid.getUidValue() + " from attributes ", e);
             }
 
             return returnUid;
@@ -614,7 +614,7 @@ public class AzureConnector implements
         }
     }
 
-    public AzureService getClient() {
+    public AzureClient getClient() {
         return client;
     }
 

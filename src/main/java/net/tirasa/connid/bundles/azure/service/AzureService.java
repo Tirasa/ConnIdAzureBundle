@@ -97,8 +97,6 @@ public class AzureService {
 
     private AuthenticationResult authenticationResult;
 
-    private AzureRestAPI authenticated;
-
     public AzureService(final String authority, final String clientId, final String username, final String password,
             final String resourceURI, final String domain) {
         this.authority = authority;
@@ -135,7 +133,7 @@ public class AzureService {
         }
     }
 
-    private void checkAuth() {
+    protected void checkAuth() {
         if (!isAuthenticated()) {
             doAuth();
         }
@@ -156,15 +154,6 @@ public class AzureService {
         }
     }
 
-    public AzureRestAPI getAuthenticated() {
-        checkAuth();
-
-        if (authenticated == null) {
-            authenticated = new AzureRestAPI(this);
-        }
-        return authenticated;
-    }
-
     public WebClient getWebclient(final String subDomain, final String parameters) {
         checkAuth();
 
@@ -180,12 +169,11 @@ public class AzureService {
             webClient.query(encodeURL(parameters));
         }
 
-        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
-
         return webClient;
     }
 
     public JsonNode doGetFromAzure(final WebClient webClient) {
+        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
         JsonNode result = null;
 
         try {

@@ -155,19 +155,35 @@ public final class AzureAttributes {
         return typeClass;
     }
 
-    public static AttributeBuilder buildAttributeFromClassField(final Field field, final AzureObject that)
-            throws IllegalArgumentException, IllegalAccessException {
-        Class<?> clazz = field.getType();
-        Object value = field.get(that);
+    public static AttributeBuilder buildAttributeFromClassField(final Field field,
+            final AzureObject that) throws IllegalArgumentException, IllegalAccessException {
+        return doBuildAttributeFromClassField(field.get(that), USER_ID, field.getType());
+    }
+
+    public static AttributeBuilder doBuildAttributeFromClassField(final Object value,
+            final String name,
+            final Class<?> clazz) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         if (value != null) {
-            if (clazz == boolean.class && Boolean.FALSE.equals(value)) {
-                attributeBuilder.addValue(value);
+            if (clazz == boolean.class || clazz == Boolean.class) {
+                attributeBuilder.addValue(Boolean.class.cast(value));
+            } else if (value instanceof List<?>) {
+                ArrayList<?> list = new ArrayList<>((List<?>) value);
+                if (list.size() > 1) {
+                    for (Object elem : list) {
+                        doBuildAttributeFromClassField(elem, name, clazz);
+                    }
+                } else if (!list.isEmpty()) {
+                    attributeBuilder.addValue(list.get(0).toString());
+                }
             } else {
                 attributeBuilder.addValue(value.toString());
             }
         }
-        attributeBuilder.setName(field.getName());
+        if (name != null) {
+            attributeBuilder.setName(name);
+        }
         return attributeBuilder;
     }
+
 }
