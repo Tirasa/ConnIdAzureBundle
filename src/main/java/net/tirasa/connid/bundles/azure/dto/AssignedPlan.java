@@ -15,12 +15,10 @@
  */
 package net.tirasa.connid.bundles.azure.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.UUID;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class AssignedPlan {
 
     private Date assignedTimestamp;

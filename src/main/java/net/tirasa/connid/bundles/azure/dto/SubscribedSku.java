@@ -15,7 +15,6 @@
  */
 package net.tirasa.connid.bundles.azure.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.lang.reflect.Field;
@@ -27,7 +26,6 @@ import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import org.identityconnectors.common.CollectionUtil;
 import org.identityconnectors.framework.common.objects.Attribute;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class SubscribedSku implements AzureObject {
 

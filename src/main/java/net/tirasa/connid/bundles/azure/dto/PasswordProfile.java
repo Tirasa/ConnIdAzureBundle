@@ -15,7 +15,6 @@
  */
 package net.tirasa.connid.bundles.azure.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +24,6 @@ import org.identityconnectors.common.security.SecurityUtil;
 import org.identityconnectors.framework.common.objects.Attribute;
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class PasswordProfile {
 
     @JsonProperty

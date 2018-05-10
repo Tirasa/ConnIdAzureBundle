@@ -15,16 +15,13 @@
  */
 package net.tirasa.connid.bundles.azure.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.ws.rs.core.Response;
 import net.tirasa.connid.bundles.azure.service.NoSuchEntityException;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class AzureError {
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Message {
 
         @JsonProperty("lang")
@@ -35,7 +32,6 @@ public class AzureError {
 
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ODataError {
 
         @JsonProperty("code")
