@@ -119,7 +119,7 @@ public class AzureConnector implements
             if (client.getAuthenticated() != null) {
                 LOG.ok("Test was successfull");
             } else {
-                LOG.error("Error with establishing connection while testing. No authorization data were provided.");
+                AzureUtils.handleGeneralError("Test error. Problems with client service");
             }
 
         } else {
