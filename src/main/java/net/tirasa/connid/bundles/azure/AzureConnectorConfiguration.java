@@ -47,8 +47,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     public final static String DEFAULT_REDIRECT_URI = "https://login.live.com/oauth20_desktop.srf";
 
     @ConfigurationProperty(order = 1, displayMessageKey = "clientid.display",
-            groupMessageKey = "basic.group", helpMessageKey = "clientid.help", required = true,
-            confidential = false)
+            helpMessageKey = "clientid.help", required = true)
     public String getClientId() {
         return clientId;
     }
@@ -58,8 +57,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 2, displayMessageKey = "authority.display",
-            groupMessageKey = "basic.group", helpMessageKey = "authority.help", required = true,
-            confidential = false)
+            helpMessageKey = "authority.help", required = true)
     public String getAuthority() {
         return authority;
     }
@@ -69,8 +67,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 3, displayMessageKey = "redirectURI.display",
-            groupMessageKey = "basic.group", helpMessageKey = "redirectURI.help", required = false,
-            confidential = false)
+            helpMessageKey = "redirectURI.help", required = false)
     public String getRedirectURI() {
         return redirectURI;
     }
@@ -80,8 +77,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 4, displayMessageKey = "resourceURI.display",
-            groupMessageKey = "basic.group", helpMessageKey = "resourceURI.help", required = false,
-            confidential = false)
+            helpMessageKey = "resourceURI.help", required = false)
     public String getResourceURI() {
         return resourceURI;
     }
@@ -91,8 +87,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 5, displayMessageKey = "username.display",
-            groupMessageKey = "basic.group", helpMessageKey = "username.help", required = true,
-            confidential = false)
+            helpMessageKey = "username.help", required = true)
     public String getUsername() {
         return username;
     }
@@ -102,8 +97,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 6, displayMessageKey = "password.display",
-            groupMessageKey = "basic.group", helpMessageKey = "password.help", required = true,
-            confidential = true)
+            helpMessageKey = "password.help", required = true, confidential = true)
     public String getPassword() {
         return password;
     }
@@ -113,8 +107,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 7, displayMessageKey = "domain.display",
-            groupMessageKey = "basic.group", helpMessageKey = "domain.help", required = true,
-            confidential = false)
+            helpMessageKey = "domain.help", required = true)
     public String getDomain() {
         return domain;
     }
