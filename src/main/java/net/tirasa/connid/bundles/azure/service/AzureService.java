@@ -172,7 +172,7 @@ public class AzureService {
         return webClient;
     }
 
-    public JsonNode doGetFromAzure(final WebClient webClient) {
+    public JsonNode doGet(final WebClient webClient) {
         LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
         JsonNode result = null;
 
@@ -214,7 +214,7 @@ public class AzureService {
                         String url = entry.get("url").asText();
                         WebClient webClient = getWebclient(url, null);
                         if (url.contains(".Group")) {
-                            JsonNode obj = doGetFromAzure(webClient);
+                            JsonNode obj = doGet(webClient);
                             if (obj != null) {
                                 String userId = obj.get(AzureAttributes.GROUP_ID).asText();
                                 if (StringUtil.isNotBlank(userId)) {

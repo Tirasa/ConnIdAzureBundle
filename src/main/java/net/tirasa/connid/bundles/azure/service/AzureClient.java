@@ -133,7 +133,7 @@ public class AzureClient extends AzureService {
         List<User> users = null;
         try {
             users = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    doGetFromAzure(webClient).toString(), User[].class));
+                    doGet(webClient).toString(), User[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Groups", ex);
         }
@@ -151,7 +151,7 @@ public class AzureClient extends AzureService {
         List<User> users = null;
         try {
             users = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    doGetFromAzure(webClient).toString(), User[].class));
+                    doGet(webClient).toString(), User[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Users", ex);
         }
@@ -244,7 +244,7 @@ public class AzureClient extends AzureService {
 
         List<Group> groups = new ArrayList<>();
         try {
-            JsonNode json = doGetFromAzure(webClient);
+            JsonNode json = doGet(webClient);
             List<String> groupIds = extractUsersFromGroupMemberships(json);
             for (String groupId : groupIds) {
                 Group group = getGroup(groupId);
@@ -286,7 +286,7 @@ public class AzureClient extends AzureService {
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    doGetFromAzure(webClient).toString(), Group[].class));
+                    doGet(webClient).toString(), Group[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Groups", ex);
         }
@@ -305,7 +305,7 @@ public class AzureClient extends AzureService {
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    doGetFromAzure(webClient).toString(), Group[].class));
+                    doGet(webClient).toString(), Group[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Groups", ex);
         }
@@ -328,7 +328,7 @@ public class AzureClient extends AzureService {
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    doGetFromAzure(webClient).toString(), Group[].class));
+                    doGet(webClient).toString(), Group[].class));
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Users", ex);
         }
@@ -428,7 +428,7 @@ public class AzureClient extends AzureService {
         List<SubscribedSku> results = null;
         try {
             results = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    doGetFromAzure(webClient).toString(), SubscribedSku[].class));
+                    doGet(webClient).toString(), SubscribedSku[].class));
         } catch (IOException ex) {
             AzureUtils.handleGeneralError("While getting current tenant available subscriptions", ex);
         }
@@ -684,7 +684,7 @@ public class AzureClient extends AzureService {
         List<User> users = null;
         try {
             users = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    doGetFromAzure(webClient).toString(), User[].class));
+                    doGet(webClient).toString(), User[].class));
         } catch (IOException ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Users", ex);
         }
@@ -696,7 +696,7 @@ public class AzureClient extends AzureService {
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
-                    doGetFromAzure(webClient).toString(), Group[].class));
+                    doGet(webClient).toString(), Group[].class));
         } catch (IOException ex) {
             AzureUtils.handleGeneralError("While converting from JSON to Groups", ex);
         }
@@ -732,14 +732,14 @@ public class AzureClient extends AzureService {
         if (type.equals("users")) {
             try {
                 obj = AzureUtils.MAPPER.readValue(
-                        doGetFromAzure(webClient).toString(), User.class);
+                        doGet(webClient).toString(), User.class);
             } catch (IOException ex) {
                 AzureUtils.handleGeneralError("While converting from JSON to User", ex);
             }
         } else if (type.equals("groups")) {
             try {
                 obj = AzureUtils.MAPPER.readValue(
-                        doGetFromAzure(webClient).toString(), Group.class);
+                        doGet(webClient).toString(), Group.class);
             } catch (IOException ex) {
                 AzureUtils.handleGeneralError("While converting from JSON to Group", ex);
             }
