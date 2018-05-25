@@ -81,30 +81,14 @@ public class AzureService {
 
     public static final String ACCEPT_HEADER = "Accept";
 
-    private final String domain;
-
-    private final String authority;
-
-    private final String clientId;
-
-    private final String username;
-
-    private final String password;
-
-    private final String resourceURI;
+    protected final AzureConnectorConfiguration config;
 
     private String pagedResultsSkipToken;
 
     private AuthenticationResult authenticationResult;
 
-    public AzureService(final String authority, final String clientId, final String username, final String password,
-            final String resourceURI, final String domain) {
-        this.authority = authority;
-        this.clientId = clientId;
-        this.username = username;
-        this.password = password;
-        this.resourceURI = resourceURI;
-        this.domain = domain;
+    public AzureService(final AzureConnectorConfiguration config) {
+        this.config = config;
     }
 
     private void doAuth() {
@@ -115,12 +99,12 @@ public class AzureService {
         try {
             service = Executors.newFixedThreadPool(1);
 
-            context = new AuthenticationContext(authority, false, service);
+            context = new AuthenticationContext(config.getAuthority(), false, service);
             Future<AuthenticationResult> future = context.acquireToken(
-                    resourceURI,
-                    clientId,
-                    username,
-                    password,
+                    config.getResourceURI(),
+                    config.getClientId(),
+                    config.getUsername(),
+                    config.getPassword(),
                     null);
 
             authenticationResult = future.get();
@@ -158,10 +142,10 @@ public class AzureService {
         checkAuth();
 
         WebClient webClient = WebClient
-                .create(resourceURI)
+                .create(config.getResourceURI())
                 .type(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationResult.getAccessToken())
-                .path(domain)
+                .path(config.getDomain())
                 .path(subDomain)
                 .query(API_VERSION_PARAM, API_VERSION);
 
@@ -173,7 +157,7 @@ public class AzureService {
     }
 
     public JsonNode doGet(final WebClient webClient) {
-        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
+        LOG.ok("GET: {0}", webClient.getCurrentURI());
         JsonNode result = null;
 
         try {
@@ -341,30 +325,6 @@ public class AzureService {
 
     private String encodeURL(final String parameters) {
         return parameters.replace(" ", "%20");
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public String getAuthority() {
-        return authority;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public String getResourceURI() {
-        return resourceURI;
     }
 
     public String getPagedResultsSkipToken() {

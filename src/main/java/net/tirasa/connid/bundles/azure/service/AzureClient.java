@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import net.tirasa.connid.bundles.azure.AzureConnectorConfiguration;
 import net.tirasa.connid.bundles.azure.dto.AvailableExtensionProperties;
 import net.tirasa.connid.bundles.azure.dto.AzureError;
 import net.tirasa.connid.bundles.azure.dto.AzureObject;
@@ -48,13 +49,8 @@ public class AzureClient extends AzureService {
 
     private static final Log LOG = Log.getLog(AzureClient.class);
 
-    public AzureClient(final String authority,
-            final String clientId,
-            final String username,
-            final String password,
-            final String resourceURI,
-            final String domain) {
-        super(authority, clientId, username, password, resourceURI, domain);
+    public AzureClient(final AzureConnectorConfiguration config) {
+        super(config);
     }
 
     public AzureClient getAuthenticated() {
@@ -590,7 +586,7 @@ public class AzureClient extends AzureService {
                 // I'll do this here because it can't be dont in Azure PropagationActions, because REST connector
                 // does not have Azure "domain" info in connector configurations list 
                 // (as it would do a real full Azure Connector) 
-                user.setUserPrincipalName(user.getMailNickname() + "@" + getDomain());
+                user.setUserPrincipalName(user.getMailNickname() + "@" + config.getDomain());
             }
 
             // handle passwordProfile object
@@ -610,7 +606,7 @@ public class AzureClient extends AzureService {
             validateGroup(group);
         }
 
-        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
+        LOG.ok("CREATE: {0}", webClient.getCurrentURI());
         Response response;
         try {
             response = webClient.post(AzureUtils.MAPPER.writeValueAsString(body));
@@ -661,7 +657,7 @@ public class AzureClient extends AzureService {
                     + obj.getObjectId(), null);
         }
 
-        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
+        LOG.ok("UPDATE: {0}", webClient.getCurrentURI());
         try {
             WebClient.getConfig(webClient).getRequestContext().put("use.async.http.conduit", true);
             webClient.invoke("PATCH", AzureUtils.MAPPER.writeValueAsString(updated));
@@ -680,7 +676,7 @@ public class AzureClient extends AzureService {
     }
 
     private List<User> doGetAllUsers(final WebClient webClient) {
-        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
+        LOG.ok("GET: {0}", webClient.getCurrentURI());
         List<User> users = null;
         try {
             users = Arrays.asList(AzureUtils.MAPPER.readValue(
@@ -692,7 +688,7 @@ public class AzureClient extends AzureService {
     }
 
     private List<Group> doGetAllGroups(final WebClient webClient) {
-        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
+        LOG.ok("GET: {0}", webClient.getCurrentURI());
         List<Group> groups = null;
         try {
             groups = Arrays.asList(AzureUtils.MAPPER.readValue(
@@ -706,7 +702,7 @@ public class AzureClient extends AzureService {
     private AzurePagedObject getAllPagedObjects(final String type,
             final WebClient webClient,
             final String skipToken) {
-        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
+        LOG.ok("GET: {0}", webClient.getCurrentURI());
         AzurePagedObject pagedObj = null;
 
         if (type.equals("users")) {
@@ -726,7 +722,7 @@ public class AzureClient extends AzureService {
     }
 
     private AzureObject doGetObject(final String type, final WebClient webClient) {
-        LOG.ok("webClient current URL : {0}", webClient.getCurrentURI());
+        LOG.ok("GET: {0}", webClient.getCurrentURI());
         AzureObject obj = null;
         
         if (type.equals("users")) {

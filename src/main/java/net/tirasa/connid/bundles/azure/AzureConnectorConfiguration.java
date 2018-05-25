@@ -32,9 +32,9 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     private String authority;
 
-    private String redirectURI;
+    private String redirectURI = "https://login.live.com/oauth20_desktop.srf";
 
-    private String resourceURI;
+    private String resourceURI = "https://graph.windows.net";
 
     private String username;
 
@@ -43,8 +43,6 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     private String domain;
 
     public final static String DEFAULT_RESOURCE_URI = "https://graph.windows.net";
-
-    public final static String DEFAULT_REDIRECT_URI = "https://login.live.com/oauth20_desktop.srf";
 
     @ConfigurationProperty(order = 1, displayMessageKey = "clientid.display",
             helpMessageKey = "clientid.help", required = true)
@@ -132,12 +130,6 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         }
         if (StringUtil.isBlank(domain)) {
             throw new IllegalArgumentException("Domain Id cannot be null or empty.");
-        }
-        if (StringUtil.isBlank(redirectURI)) {
-            redirectURI = DEFAULT_REDIRECT_URI;
-        }
-        if (StringUtil.isBlank(resourceURI)) {
-            resourceURI = DEFAULT_RESOURCE_URI;
         }
     }
 

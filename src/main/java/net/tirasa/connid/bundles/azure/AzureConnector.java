@@ -91,14 +91,7 @@ public class AzureConnector implements
         this.configuration = (AzureConnectorConfiguration) configuration;
         this.configuration.validate();
 
-        client = new AzureClient(
-                this.configuration.getAuthority(),
-                this.configuration.getClientId(),
-                this.configuration.getUsername(),
-                this.configuration.getPassword(),
-                this.configuration.getResourceURI(),
-                this.configuration.getDomain()
-        );
+        client = new AzureClient(this.configuration);
 
         LOG.ok("Connector {0} successfully inited", getClass().getName());
     }
