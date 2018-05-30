@@ -177,7 +177,6 @@ public class AzureService {
             if (result.has("value") && !result.get("value").isNull()) {
                 result = result.get("value");
             }
-
         } catch (IOException ex) {
             LOG.error(ex, "While retrieving data from Azure AD service");
         }
@@ -251,7 +250,6 @@ public class AzureService {
             doc.getDocumentElement().normalize();
 
             result.addAll(getAttributesFromNodeList(doc, type));
-
         } catch (IOException | ParserConfigurationException | SAXException ex) {
             AzureUtils.handleGeneralError("While getting xml metadata object", ex);
         }
@@ -271,7 +269,6 @@ public class AzureService {
             String nodeName = eElement.getAttribute(METADATA_NAME_ID);
 
             if (StringUtil.isNotBlank(nodeName) && nodeName.equals(objType)) {
-
                 for (int j = 0; j < entitiesList.getLength(); j++) {
                     Node subNode = entitiesList.item(j);
 
@@ -302,7 +299,6 @@ public class AzureService {
             String nodeName = eElement.getAttribute(METADATA_NAME_ID);
 
             if (StringUtil.isNotBlank(nodeName) && nodeName.equals(objType)) {
-
                 String nodeType = eElement.getAttribute(METADATA_TYPE_ID);
                 String nodeNullable = eElement.getAttribute(METADATA_NULLABLE_ID);
 
@@ -314,10 +310,8 @@ public class AzureService {
                 if (StringUtil.isNotBlank(nodeNullable)) {
                     map.put(METADATA_NULLABLE_ID, nodeNullable);
                 }
-
                 list.add(map);
             }
-
         }
 
         return list;

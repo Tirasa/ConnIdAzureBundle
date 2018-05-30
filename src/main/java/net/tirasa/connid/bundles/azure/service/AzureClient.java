@@ -620,11 +620,13 @@ public class AzureClient extends AzureService {
                 if (responseObj.hasNonNull(value)) {
                     body.setObjectId(responseObj.get(value).asText());
                 } else {
+                    LOG.error("CREATE payload {0}: ", body);
                     AzureUtils.handleGeneralError(
                             "While getting " + value + " value for created User - Response : " + responseAsString);
                 }
             }
         } catch (IOException ex) {
+            LOG.error("CREATE payload {0}: ", body);
             AzureUtils.handleGeneralError("While creating User", ex);
         }
 
@@ -662,6 +664,7 @@ public class AzureClient extends AzureService {
             WebClient.getConfig(webClient).getRequestContext().put("use.async.http.conduit", true);
             webClient.invoke("PATCH", AzureUtils.MAPPER.writeValueAsString(updated));
         } catch (JsonProcessingException ex) {
+            LOG.error("UPDATE payload {0}: ", updated);
             AzureUtils.handleGeneralError("While updating User", ex);
         }
 
@@ -724,7 +727,7 @@ public class AzureClient extends AzureService {
     private AzureObject doGetObject(final String type, final WebClient webClient) {
         LOG.ok("GET: {0}", webClient.getCurrentURI());
         AzureObject obj = null;
-        
+
         if (type.equals("users")) {
             try {
                 obj = AzureUtils.MAPPER.readValue(
