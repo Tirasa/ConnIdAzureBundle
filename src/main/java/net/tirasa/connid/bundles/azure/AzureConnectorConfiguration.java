@@ -44,8 +44,8 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     public final static String DEFAULT_RESOURCE_URI = "https://graph.windows.net";
 
-    @ConfigurationProperty(order = 1, displayMessageKey = "clientid.display",
-            helpMessageKey = "clientid.help", required = true)
+    @ConfigurationProperty(order = 1, displayMessageKey = "clientId.display",
+            helpMessageKey = "clientId.help", required = true)
     public String getClientId() {
         return clientId;
     }
