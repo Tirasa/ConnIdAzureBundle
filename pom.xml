@@ -23,12 +23,12 @@
   <parent>
     <groupId>net.tirasa.connid</groupId>
     <artifactId>connid</artifactId>
-    <version>1.4.1.0</version>
+    <version>1.5.0.2</version>
   </parent>
     
   <groupId>net.tirasa.connid.bundles</groupId>
   <artifactId>net.tirasa.connid.bundles.azure</artifactId>
-  <version>1.0.2-SNAPSHOT</version>     
+  <version>2.0.0-SNAPSHOT</version>     
      
   <name>ConnId Bundles: Azure</name>
   
@@ -76,7 +76,7 @@
   </mailingLists>
   
   <properties>
-    <connid.version>1.4.1.0</connid.version>
+    <connid.version>1.5.0.2</connid.version>
     
     <azure.version>1.7.0</azure.version>
     <azure.adal4j.version>1.4.0</azure.adal4j.version>
@@ -85,7 +85,7 @@
     <jackson.version>2.10.0</jackson.version>
     <cxf.version>3.1.18</cxf.version>
      
-    <java.version>1.7</java.version>
+    <java.version>1.8</java.version>
         
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -222,8 +222,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -238,7 +243,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version> 
+        <version>3.8.1</version> 
         <inherited>false</inherited>
         <configuration>
           <source>${java.version}</source>
@@ -251,57 +256,58 @@
       </plugin>
 
       <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <version>1.10.b1</version>
-        <inherited>false</inherited>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>check-headers</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>3.0</version>
-        <inherited>false</inherited>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <version>0.13</version>
         <configuration>
-          <header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
-          <properties>
-            <owner>ConnId</owner>
-            <email>connid-dev@googlegroups.com</email>
-          </properties>
           <excludes>
-            <exclude>**/LICENSE*</exclude>
-            <exclude>**/NOTICE*</exclude>
-            <exclude>**/*.pfx</exclude>
-            <exclude>**/*.dll</exclude>
-            <exclude>**/*.so</exclude>
-            <exclude>**/*.jnilib</exclude>
-            <exclude>nbactions.xml</exclude>
-            <exclude>nb-configuration.xml</exclude>
+            <exclude>**/nbactions.xml</exclude>
+            <exclude>**/nb-configuration.xml</exclude>
+            <exclude>**/META-INF/cxf/**</exclude>
             <exclude>**/META-INF/services/**</exclude>
-            <exclude>**/*.css</exclude>
-            <exclude>**/*.js</exclude>
+            <exclude>**/META-INF/MANIFEST.MF</exclude>
             <exclude>**/*.csv</exclude>
+            <exclude>**/archetype-resources/**</exclude>
+            <exclude>**/AdminLTE*/**</exclude>
+            <exclude>**/goal.txt</exclude>
+            <exclude>**/rat.txt</exclude>
+            <exclude>**/build-copy-javadoc-files.xml</exclude>
             <exclude>**/maven-eclipse.xml</exclude>
             <exclude>**/*.iml</exclude>
             <exclude>**/*.log</exclude>
-            <exclude>.externalToolBuilders/**</exclude>
+            <exclude>**/.externalToolBuilders/**</exclude>
             <exclude>.git/**</exclude>
             <exclude>.idea/**</exclude>
+            <exclude>**/.settings/**</exclude>
             <exclude>**/.*</exclude>
+            <exclude>**/*.lst</exclude>
+            <exclude>**/*.json</exclude>
+            <exclude>**/banner.txt</exclude>
+            <exclude>**/target/**</exclude>
           </excludes>
         </configuration>
         <executions>
           <execution>
+            <id>rat-check</id>
+            <phase>verify</phase>
             <goals>
               <goal>check</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
-    
+        
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -315,7 +321,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.0.1</version>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>copy-artifact-legal-files</id>
