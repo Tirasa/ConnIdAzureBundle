@@ -81,9 +81,6 @@
     <microsoft.graph.version>5.8.0</microsoft.graph.version>
     <azure.identity.version>1.4.2</azure.identity.version>
     <azure.msal4j.version>1.11.0</azure.msal4j.version>
-    <junit.version>5.7.1</junit.version>
-    
-    <cxf.version>3.1.18</cxf.version>
      
     <java.version>1.8</java.version>
         
@@ -106,21 +103,6 @@
       <groupId>com.microsoft.azure</groupId>
       <artifactId>msal4j</artifactId>
       <version>${azure.msal4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-rs-client</artifactId>
-      <version>${cxf.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.codehaus.woodstox</groupId>
-          <artifactId>woodstox-core-asl</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.ws.xmlschema</groupId>
-          <artifactId>xmlschema-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>net.tirasa.connid</groupId>
@@ -148,8 +130,12 @@
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <version>${junit.version}</version>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -1003,6 +1003,7 @@ public class AzureConnector implements
         return token.substring(0, token.indexOf("&"));
     }
 
+    @SuppressWarnings("unchecked")
     private void doUserSetAttribute(final String name, final List<Object> values, User user) {
         Object value = values.isEmpty() ? null : values.get(0);
         switch (name) {
@@ -1105,6 +1106,7 @@ public class AzureConnector implements
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void doGroupSetAttribute(final String name, final List<Object> values, Group group) {
         Object value = values.isEmpty() ? null : values.get(0);
         switch (name) {

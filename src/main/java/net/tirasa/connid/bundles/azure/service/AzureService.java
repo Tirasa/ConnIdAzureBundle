@@ -19,9 +19,7 @@ import com.azure.identity.ClientSecretCredential;
 import com.azure.identity.ClientSecretCredentialBuilder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -38,7 +36,9 @@ import com.microsoft.graph.authentication.TokenCredentialAuthProvider;
 import com.microsoft.graph.requests.GraphServiceClient;
 import net.tirasa.connid.bundles.azure.AzureConnectorConfiguration;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
-import org.apache.cxf.jaxrs.client.WebClient;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
 import org.w3c.dom.Document;
@@ -62,8 +62,6 @@ public class AzureService {
     public static final String USER_METADATA_TYPE_ID_VALUE = "User";
 
     public static final String GROUP_METADATA_TYPE_ID_VALUE = "Group";
-
-    public static final String ACCEPT_HEADER = "Accept";
 
     protected final AzureConnectorConfiguration config;
 
@@ -139,18 +137,16 @@ public class AzureService {
 
         // e.g. 
         // https://graph.windows.net/[DOMAIN_NAME].onmicrosoft.com/$metadata#directoryObjects/Microsoft.DirectoryServices.User
-        WebClient webClient = WebClient
-                .create(AzureConnectorConfiguration.DEFAULT_RESOURCE_URI)
-                .path("$metadata");
-
         try {
-            HttpURLConnection connection =
-                    (HttpURLConnection) new URL(webClient.getCurrentURI().toString()).openConnection();
-            connection.setRequestProperty(ACCEPT_HEADER,
-                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-            connection.setRequestProperty("Accept-Encoding", "gzip, deflate, br");
-            connection.setRequestMethod("GET");
-            InputStream xml = connection.getInputStream();
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder()
+                    .url(AzureConnectorConfiguration.DEFAULT_RESOURCE_URI + "/$metadata")
+                    .addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .addHeader("Accept-Encoding", "gzip, deflate, br")
+                    .build();
+
+            Response response = client.newCall(request).execute();
+            InputStream xml = response.body().byteStream();
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document doc = db.parse(xml);
