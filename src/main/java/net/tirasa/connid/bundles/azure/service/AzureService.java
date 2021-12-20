@@ -15,35 +15,29 @@
  */
 package net.tirasa.connid.bundles.azure.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.microsoft.aad.adal4j.AuthenticationContext;
-import com.microsoft.aad.adal4j.AuthenticationResult;
+import com.azure.identity.ClientSecretCredential;
+import com.azure.identity.ClientSecretCredentialBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import com.microsoft.aad.msal4j.IAuthenticationResult;
+import com.microsoft.aad.msal4j.PublicClientApplication;
+import com.microsoft.aad.msal4j.UserNamePasswordParameters;
+import com.microsoft.graph.authentication.TokenCredentialAuthProvider;
+import com.microsoft.graph.requests.GraphServiceClient;
 import net.tirasa.connid.bundles.azure.AzureConnectorConfiguration;
-import net.tirasa.connid.bundles.azure.dto.AzureError;
-import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
@@ -56,16 +50,6 @@ import org.xml.sax.SAXException;
 public class AzureService {
 
     private static final Log LOG = Log.getLog(AzureService.class);
-
-    private final static String API_VERSION = "1.6";
-
-    private final static String API_VERSION_PARAM = "api-version";
-
-    private final static String ODATA_ERROR_ID = "odata.error";
-
-    private final static String ODATA_NEXTPAGE_ID = "odata.nextLink";
-
-    public final static String SKIP_TOKEN_ID = "$skiptoken=";
 
     public final static String METADATA_NAME_ID = "Name";
 
@@ -83,9 +67,7 @@ public class AzureService {
 
     protected final AzureConnectorConfiguration config;
 
-    private String pagedResultsSkipToken;
-
-    private AuthenticationResult authenticationResult;
+    private IAuthenticationResult authenticationResult;
 
     public AzureService(final AzureConnectorConfiguration config) {
         this.config = config;
@@ -94,26 +76,21 @@ public class AzureService {
     private void doAuth() {
         LOG.ok("Performing Azure account authentication");
 
-        AuthenticationContext context;
-        ExecutorService service = null;
+        PublicClientApplication pca;
         try {
-            service = Executors.newFixedThreadPool(1);
+            pca = PublicClientApplication.builder(config.getClientId())
+                    .authority(config.getAuthority())
+                    .build();
 
-            context = new AuthenticationContext(config.getAuthority(), false, service);
-            Future<AuthenticationResult> future = context.acquireToken(
-                    config.getResourceURI(),
-                    config.getClientId(),
-                    config.getUsername(),
-                    config.getPassword(),
-                    null);
+            UserNamePasswordParameters parameters = UserNamePasswordParameters
+                    .builder(Collections.singleton(config.getScopes()), config.getUsername(),
+                            config.getPassword().toCharArray()).build();
 
-            authenticationResult = future.get();
-        } catch (InterruptedException | ExecutionException | MalformedURLException ex) {
+            authenticationResult = pca.acquireToken(parameters).join();
+            LOG.ok("==username/password flow succeeded");
+
+        } catch (MalformedURLException ex) {
             AzureUtils.handleGeneralError("While performing Azure authentication", ex);
-        } finally {
-            if (service != null) {
-                service.shutdown();
-            }
         }
     }
 
@@ -126,99 +103,31 @@ public class AzureService {
 
     private boolean isAuthenticated() {
         return authenticationResult != null
-                && StringUtil.isNotBlank(authenticationResult.getAccessToken());
+                && StringUtil.isNotBlank(authenticationResult.accessToken());
     }
 
     private void checkTokenExpiry() {
-        Date expireOnDate = authenticationResult.getExpiresOnDate();
+        Date expireOnDate = authenticationResult.expiresOnDate();
         Date currentDate = new Date();
         if (currentDate.after(expireOnDate)) {
-            LOG.info("Token expired! Refreshing...");
+            LOG.ok("Token expired! Refreshing...");
             doAuth();
         }
     }
 
-    public WebClient getWebclient(final String subDomain, final String parameters) {
+    public GraphServiceClient getGraphServiceClient() {
         checkAuth();
 
-        WebClient webClient = WebClient
-                .create(config.getResourceURI())
-                .type(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationResult.getAccessToken())
-                .path(config.getDomain())
-                .path(subDomain)
-                .query(API_VERSION_PARAM, API_VERSION);
+        final ClientSecretCredential clientSecretCredential = new ClientSecretCredentialBuilder()
+                .clientId(config.getClientId())
+                .clientSecret(config.getClientSecret())
+                .tenantId(config.getTenantId())
+                .build();
 
-        if (StringUtil.isNotBlank(parameters)) {
-            webClient.query(encodeURL(parameters));
-        }
+        final TokenCredentialAuthProvider tokenCredAuthProvider =
+                new TokenCredentialAuthProvider(Collections.singletonList(config.getScopes()), clientSecretCredential);
 
-        return webClient;
-    }
-
-    public JsonNode doGet(final WebClient webClient) {
-        LOG.ok("GET: {0}", webClient.getCurrentURI());
-        JsonNode result = null;
-
-        try {
-            Response response = webClient.get();
-            String responseAsString = response.readEntity(String.class);
-            result = AzureUtils.MAPPER.readTree(responseAsString);
-
-            checkAzureErrors(result, response);
-
-            // case of paged results
-            JsonNode nextLink = result.get(ODATA_NEXTPAGE_ID);
-            if (nextLink != null && !nextLink.isNull()) {
-                pagedResultsSkipToken = StringUtils.substringAfter(nextLink.asText(), SKIP_TOKEN_ID);
-            }
-
-            // case of multiple results or no results
-            if (result.has("value") && !result.get("value").isNull()) {
-                result = result.get("value");
-            }
-        } catch (IOException ex) {
-            LOG.error(ex, "While retrieving data from Azure AD service");
-        }
-
-        return result;
-    }
-
-    public List<String> extractUsersFromGroupMemberships(final JsonNode json) {
-        List<String> userIds = new ArrayList<>();
-
-        if (json != null) {
-            JsonNode urls = json.has("value") ? json.get("value") : json;
-            if (urls != null && !urls.isNull() && urls.isArray()) {
-                Iterator<JsonNode> subAttrsNode = urls.elements();
-                while (subAttrsNode.hasNext()) {
-                    JsonNode entry = subAttrsNode.next();
-                    try {
-                        String url = entry.get("url").asText();
-                        WebClient webClient = getWebclient(url, null);
-                        if (url.contains(".Group")) {
-                            JsonNode obj = doGet(webClient);
-                            if (obj != null) {
-                                String userId = obj.get(AzureAttributes.GROUP_ID).asText();
-                                if (StringUtil.isNotBlank(userId)) {
-                                    userIds.add(userId);
-                                }
-                            }
-                        }
-                    } catch (Exception ex) {
-                        LOG.error(ex, "While parsing user groups!");
-                    }
-                }
-            }
-        }
-
-        return userIds;
-    }
-
-    private void checkAzureErrors(final JsonNode node, final Response response) {
-        if (node.has(ODATA_ERROR_ID)) {
-            AzureError.sendError("get object from Azure!", response);
-        }
+        return GraphServiceClient.builder().authenticationProvider(tokenCredAuthProvider).buildClient();
     }
 
     public static List<Map<String, String>> getMetadata(final String type) {
@@ -315,14 +224,6 @@ public class AzureService {
         }
 
         return list;
-    }
-
-    private String encodeURL(final String parameters) {
-        return parameters.replace(" ", "%20");
-    }
-
-    public String getPagedResultsSkipToken() {
-        return pagedResultsSkipToken;
     }
 
 }
