@@ -15,19 +15,26 @@
  */
 package net.tirasa.connid.bundles.azure;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import net.tirasa.connid.bundles.azure.dto.AssignedLicense;
-import net.tirasa.connid.bundles.azure.dto.Group;
-import net.tirasa.connid.bundles.azure.dto.License;
-import net.tirasa.connid.bundles.azure.dto.PagedGroups;
-import net.tirasa.connid.bundles.azure.dto.PagedUsers;
-import net.tirasa.connid.bundles.azure.dto.SubscribedSku;
-import net.tirasa.connid.bundles.azure.dto.User;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.microsoft.graph.models.AssignedLicense;
+import com.microsoft.graph.models.AssignedPlan;
+import com.microsoft.graph.models.Group;
+import com.microsoft.graph.models.PasswordProfile;
+import com.microsoft.graph.models.ProvisionedPlan;
+import com.microsoft.graph.models.SubscribedSku;
+import com.microsoft.graph.models.User;
+import com.microsoft.graph.models.UserAssignLicenseParameterSet;
+import com.microsoft.graph.requests.UserCollectionPage;
+import com.microsoft.graph.requests.UserCollectionRequestBuilder;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
@@ -75,6 +82,8 @@ public class AzureConnector implements
 
     private Schema schema;
 
+    public final static String SKIP_TOKEN_ID = "$skiptoken=";
+
     private static final Log LOG = Log.getLog(AzureConnector.class);
 
     private AzureClient client;
@@ -110,7 +119,7 @@ public class AzureConnector implements
         if (configuration != null) {
 
             if (client.getAuthenticated() != null) {
-                LOG.ok("Test was successfull");
+                LOG.ok("Test was successful");
             } else {
                 AzureUtils.handleGeneralError("Test error. Problems with client service");
             }
@@ -136,13 +145,7 @@ public class AzureConnector implements
             final ObjectClass objectClass,
             final OperationOptions options) {
 
-        return new FilterTranslator<Filter>() {
-
-            @Override
-            public List<Filter> translate(final Filter filter) {
-                return Collections.singletonList(filter);
-            }
-        };
+        return Collections::singletonList;
     }
 
     @Override
@@ -174,16 +177,21 @@ public class AzureConnector implements
                 try {
                     if (pagesSize != -1) {
                         if (StringUtil.isNotBlank(cookie)) {
-                            PagedUsers pagedResult =
-                                    client.getAuthenticated().getAllUsersNextPage(pagesSize, cookie, false);
-                            users = pagedResult.getUsers();
-
-                            cookie = users.size() > pagesSize ? pagedResult.getSkipToken() : null;
+                            UserCollectionRequestBuilder request =
+                                    client.getAuthenticated().getAllUsersNextPage(pagesSize, cookie);
+                            UserCollectionPage userCollectionPage = request.buildRequest().get();
+                            if (userCollectionPage != null) {
+                                users = userCollectionPage.getCurrentPage();
+                                String skipToken = getSkipToken(request);
+                                cookie = userCollectionPage.getNextPage() != null ? skipToken : null;
+                            }
                         } else {
-                            PagedUsers pagedResult = client.getAuthenticated().getAllUsers(pagesSize);
-                            users = pagedResult.getUsers();
+                            users = client.getAuthenticated().getAllUsers(pagesSize);
 
-                            cookie = pagedResult.getSkipToken();
+                            UserCollectionRequestBuilder request =
+                                    client.getAuthenticated().getAllUsersNextPage(pagesSize, "");
+                            String skipToken = getSkipToken(request);
+                            cookie = request.buildRequest().get().getNextPage() != null ? skipToken : null;
                         }
                     } else {
                         users = client.getAuthenticated().getAllUsers();
@@ -192,8 +200,10 @@ public class AzureConnector implements
                     AzureUtils.wrapGeneralError("While getting Users!", e);
                 }
 
-                for (User user : users) {
-                    handler.handle(fromUser(user, attributesToGet));
+                if (users != null) {
+                    for (User user : users) {
+                        handler.handle(fromUser(user, attributesToGet));
+                    }
                 }
 
                 if (handler instanceof SearchResultsHandler) {
@@ -208,7 +218,9 @@ public class AzureConnector implements
                         AzureUtils.wrapGeneralError("While getting User : "
                                 + key.getName() + " - " + AttributeUtil.getAsStringValue(key), e);
                     }
-                    handler.handle(fromUser(result, attributesToGet));
+                    if (result != null) {
+                        handler.handle(fromUser(result, attributesToGet));
+                    }
                 }
             }
 
@@ -222,16 +234,13 @@ public class AzureConnector implements
                 try {
                     if (pagesSize != -1) {
                         if (StringUtil.isNotBlank(cookie)) {
-                            PagedGroups pagedResult =
-                                    client.getAuthenticated().getAllGroupsNextPage(pagesSize, cookie, false);
-                            groups = pagedResult.getGroups();
+                            groups = client.getAuthenticated().getAllGroupsNextPage(pagesSize, cookie);
 
-                            cookie = groups.size() > pagesSize ? pagedResult.getSkipToken() : null;
+                            //cookie = groups.size() > pagesSize ? pagedResult.getSkipToken() : null;
                         } else {
-                            PagedGroups pagedResult = client.getAuthenticated().getAllGroups(pagesSize);
-                            groups = pagedResult.getGroups();
+                            groups = client.getAuthenticated().getAllGroups(pagesSize);
 
-                            cookie = pagedResult.getSkipToken();
+                            //cookie = pagedResult.getSkipToken();
                         }
                     } else {
                         groups = client.getAuthenticated().getAllGroups();
@@ -240,8 +249,10 @@ public class AzureConnector implements
                     AzureUtils.wrapGeneralError("While getting Groups!", e);
                 }
 
-                for (Group group : groups) {
-                    handler.handle(fromGroup(group, attributesToGet));
+                if (groups != null) {
+                    for (Group group : groups) {
+                        handler.handle(fromGroup(group, attributesToGet));
+                    }
                 }
 
                 if (handler instanceof SearchResultsHandler) {
@@ -256,7 +267,9 @@ public class AzureConnector implements
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError("While getting Group!", e);
                     }
-                    handler.handle(fromGroup(result, attributesToGet));
+                    if (result != null) {
+                        handler.handle(fromGroup(result, attributesToGet));
+                    }
                 }
             }
         } else if (new ObjectClass(AzureAttributes.AZURE_LICENSE_NAME).equals(objectClass)) {
@@ -268,8 +281,10 @@ public class AzureConnector implements
                     AzureUtils.wrapGeneralError("While getting subscriptions!", e);
                 }
 
-                for (SubscribedSku subscribedSku : subscribedSkus) {
-                    handler.handle(fromLicense(subscribedSku, attributesToGet));
+                if (subscribedSkus != null) {
+                    for (SubscribedSku subscribedSku : subscribedSkus) {
+                        handler.handle(fromLicense(subscribedSku, attributesToGet));
+                    }
                 }
 
                 if (handler instanceof SearchResultsHandler) {
@@ -277,7 +292,7 @@ public class AzureConnector implements
                 }
             }
         } else {
-            LOG.warn("Search of type {0} is not supported", objectClass.getObjectClassValue());
+            LOG.warn("Search of type " + objectClass.getObjectClassValue() + " is not supported");
             throw new UnsupportedOperationException("Search of type"
                     + objectClass.getObjectClassValue() + " is not supported");
         }
@@ -296,32 +311,31 @@ public class AzureConnector implements
 
         if (ObjectClass.ACCOUNT.equals(objectClass)) {
             User user = new User();
+            User createdUser = new User();
             String username = accessor.findString(AzureAttributes.USER_MAIL_NICKNAME);
             if (username == null) {
                 username = accessor.findString(Name.NAME);
             }
-            GuardedString password = accessor.findGuardedString(OperationalAttributes.PASSWORD_NAME);
+            GuardedString password = accessor.getPassword();
             String displayName = accessor.findString(AzureAttributes.USER_DISPLAY_NAME);
-            Attribute status = accessor.find(OperationalAttributes.ENABLE_NAME);
+            boolean status = accessor.getEnabled(true);
             List<Object> licenses = accessor.findList(AzureAttributes.AZURE_LICENSE_NAME);
 
             try {
                 // handle mandatory attributes (some attributes are handled by Service class)
-                user.setDisplayName(displayName);
-                user.setMailNickname(username);
-                user.setPassword(password);
+                user.displayName = displayName;
+                user.mailNickname = username;
 
-                if (status == null
-                        || status.getValue() == null
-                        || status.getValue().isEmpty()) {
-                    LOG.warn("{0} attribute value not correct or not found, won't handle User status",
-                            OperationalAttributes.ENABLE_NAME);
-                } else {
-                    user.setAccountEnabled(Boolean.parseBoolean(status.getValue().get(0).toString()));
-                }
+                PasswordProfile passwordProfile = new PasswordProfile();
+                passwordProfile.password = String.valueOf(password);
+                user.passwordProfile = passwordProfile;
 
-                user.fromAttributes(createAttributes);
-                client.getAuthenticated().createUser(user);
+                user.accountEnabled = status;
+
+                createAttributes.forEach(attribute ->
+                        doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
+
+                createdUser = client.getAuthenticated().createUser(user);
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not create User : " + username, e);
             }
@@ -331,9 +345,9 @@ public class AzureConnector implements
             if (!CollectionUtil.isEmpty(groups)) {
                 for (Object group : groups) {
                     try {
-                        client.getAuthenticated().addUserToGroup(user.getObjectId(), group.toString());
+                        client.getAuthenticated().addUserToGroup(createdUser.id, group.toString());
                     } catch (Exception e) {
-                        LOG.error(e, "Could not add User {0} to Group {1} ", user.getObjectId(), group);
+                        LOG.error("Could not add User {0} to Group {1} ", createdUser.id, group, e);
                     }
                 }
             }
@@ -343,15 +357,23 @@ public class AzureConnector implements
                 for (Object license : licenses) {
                     // executing an assignment per single license in order to skip errors from invalid licenses
                     try {
-                        client.getAuthenticated().assignLicense(user.getObjectId(),
-                                License.create(Collections.singletonList(String.class.cast(license)), true));
+                        UserAssignLicenseParameterSet userAssignLicenseParameterSet =
+                                new UserAssignLicenseParameterSet();
+                        AssignedLicense assignedLicense = new AssignedLicense();
+                        assignedLicense.skuId = (UUID.fromString(license.toString()));
+                        LinkedList<AssignedLicense> assignedLicenses = new LinkedList<>();
+                        assignedLicenses.add(assignedLicense);
+                        List<UUID> removedLicenses = new ArrayList<>();
+                        userAssignLicenseParameterSet.addLicenses = assignedLicenses;
+                        userAssignLicenseParameterSet.removeLicenses = removedLicenses;
+                        client.getAuthenticated().assignLicense(createdUser.id, userAssignLicenseParameterSet);
                     } catch (RuntimeException ex) {
-                        LOG.error(ex, "While assigning license {0} to user {1}", String.class.cast(license), user);
+                        LOG.error("While assigning license {0} to user {1}", license, createdUser, ex);
                     }
                 }
             }
 
-            return new Uid(user.getObjectId());
+            return new Uid(createdUser.id);
 
         } else if (ObjectClass.GROUP.equals(objectClass)) {
             String groupName = accessor.findString(AzureAttributes.GROUP_MAIL_NICKNAME);
@@ -361,21 +383,23 @@ public class AzureConnector implements
             String displayName = accessor.findString(AzureAttributes.GROUP_DISPLAY_NAME);
 
             Group group = new Group();
+            Group createdGroup = new Group();
             try {
                 // handle mandatory attributes (some attributes are handled by Service class)
-                group.setDisplayName(displayName);
-                group.setMailNickname(groupName);
+                group.displayName = displayName;
+                group.mailNickname = groupName;
 
-                group.fromAttributes(createAttributes);
-                client.getAuthenticated().createGroup(group);
+                createAttributes.forEach(attribute ->
+                        doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
+                createdGroup = client.getAuthenticated().createGroup(group);
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not create Group : " + groupName, e);
             }
 
-            return new Uid(group.getObjectId());
+            return new Uid(createdGroup.id);
 
         } else {
-            LOG.warn("Create of type {0} is not supported", objectClass.getObjectClassValue());
+            LOG.warn("Create of type " + objectClass.getObjectClassValue() + " is not supported");
             throw new UnsupportedOperationException("Create of type"
                     + objectClass.getObjectClassValue() + " is not supported");
         }
@@ -391,14 +415,14 @@ public class AzureConnector implements
         }
 
         if (objectClass == null) {
-            LOG.error("Object value not provided {0} ", objectClass);
+            LOG.error("Object value not provided ");
             throw new InvalidAttributeValueException("Object value not provided");
         }
 
         if (ObjectClass.ACCOUNT.equals(objectClass)) {
             try {
                 for (Group group : client.getAuthenticated().getAllGroupsForUser(uid.getUidValue())) {
-                    client.getAuthenticated().deleteUserFromGroup(uid.getUidValue(), group.getObjectId());
+                    client.getAuthenticated().deleteUserFromGroup(uid.getUidValue(), group.id);
                 }
             } catch (Exception e) {
                 LOG.error("Could not delete User {0} from Groups", uid.getUidValue());
@@ -418,7 +442,7 @@ public class AzureConnector implements
             }
 
         } else {
-            LOG.warn("Delete of type {0} is not supported", objectClass.getObjectClassValue());
+            LOG.warn("Delete of type " + objectClass.getObjectClassValue() + " is not supported");
             throw new UnsupportedOperationException("Delete of type"
                     + objectClass.getObjectClassValue() + " is not supported");
         }
@@ -439,7 +463,7 @@ public class AzureConnector implements
             Uid returnUid = uid;
 
             String displayName = accessor.findString(AzureAttributes.USER_DISPLAY_NAME);
-            Attribute status = accessor.find(OperationalAttributes.ENABLE_NAME);
+            Attribute status = accessor.find(AzureAttributes.USER_ACCOUNT_ENABLED);
             List<Object> licenses = accessor.findList(AzureAttributes.AZURE_LICENSE_NAME);
 
             if (displayName == null) {
@@ -448,26 +472,29 @@ public class AzureConnector implements
             }
 
             User user = new User();
-            user.setObjectId(uid.getUidValue());
+            user.id = uid.getUidValue();
 
             if (status == null
                     || status.getValue() == null
                     || status.getValue().isEmpty()) {
-                LOG.warn("{0} attribute value not correct, can't handle User  status update",
+                LOG.warn("{0} attribute value not correct, can't handle User status update",
                         OperationalAttributes.ENABLE_NAME);
             } else {
-                user.setAccountEnabled(Boolean.parseBoolean(status.getValue().get(0).toString()));
+                user.accountEnabled = Boolean.parseBoolean(status.getValue().get(0).toString());
             }
 
             try {
-                user.fromAttributes(replaceAttributes);
+                replaceAttributes.forEach(attribute ->
+                        doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
 
                 // password
                 GuardedString password = accessor.getPassword();
                 if (password != null) {
                     try {
-                        if (user.getPassword() != null || user.getPasswordProfile() != null) {
-                            user.setPassword(password);
+                        if (user.passwordProfile != null) {
+                            PasswordProfile passwordProfile = new PasswordProfile();
+                            passwordProfile.password = String.valueOf(password);
+                            user.passwordProfile = passwordProfile;
                         }
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError(
@@ -477,7 +504,7 @@ public class AzureConnector implements
 
                 client.getAuthenticated().updateUser(user);
 
-                returnUid = new Uid(user.getObjectId());
+                returnUid = new Uid(user.id);
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError(
                         "Could not update User " + uid.getUidValue() + " from attributes ", e);
@@ -489,7 +516,7 @@ public class AzureConnector implements
                 List<Group> ownGroupsResults =
                         client.getAuthenticated().getAllGroupsForUser(returnUid.getUidValue());
                 for (Group group : ownGroupsResults) {
-                    ownGroups.add(group.getObjectId());
+                    ownGroups.add(group.id);
                 }
             } catch (Exception ex) {
                 LOG.error(ex, "Could not list groups for User {0}", uid.getUidValue());
@@ -523,34 +550,51 @@ public class AzureConnector implements
                 LOG.error("While reading user {0} after update in order to handle licenses update",
                         returnUid.getUidValue());
             } else {
-                List<String> assignedSkuIds = new ArrayList<>();
-                for (AssignedLicense assignedLicense : updatedUser.getAssignedLicenses()) {
-                    assignedSkuIds.add(assignedLicense.getSkuId());
+                List<UUID> assignedSkuIds = new ArrayList<>();
+                if (updatedUser.assignedLicenses != null) {
+                    for (AssignedLicense assignedLicense : updatedUser.assignedLicenses) {
+                        assignedSkuIds.add(assignedLicense.skuId);
+                    }
                 }
 
                 if (CollectionUtil.isEmpty(licenses)) {
                     if (!assignedSkuIds.isEmpty()) {
-                        client.getAuthenticated().assignLicense(returnUid.getUidValue(),
-                                License.create(assignedSkuIds, false));
+                        assignedSkuIds.forEach(uuid -> {
+                            UserAssignLicenseParameterSet userAssignLicenseParameterSet =
+                                    new UserAssignLicenseParameterSet();
+                            LinkedList<AssignedLicense> assignedLicenses = new LinkedList<>();
+                            List<UUID> removedLicenses = new ArrayList<>();
+                            removedLicenses.add(uuid);
+                            userAssignLicenseParameterSet.addLicenses = assignedLicenses;
+                            userAssignLicenseParameterSet.removeLicenses = removedLicenses;
+                            client.getAuthenticated().assignLicense(user.id, userAssignLicenseParameterSet);
+                        });
                     }
                 } else {
-                    List<String> toAdd = new ArrayList<>();
-                    List<String> toRemove = new ArrayList<>();
-                    List<String> newLicenses = new ArrayList<>();
+                    List<UUID> toRemove = new ArrayList<>();
+                    List<UUID> newLicenses = new ArrayList<>();
                     for (Object license : licenses) {
-                        newLicenses.add(String.class.cast(license));
+                        newLicenses.add(UUID.fromString(license.toString()));
                     }
-                    for (String assignedSkuId : assignedSkuIds) {
+                    for (UUID assignedSkuId : assignedSkuIds) {
                         if (!newLicenses.contains(assignedSkuId)) {
                             toRemove.add(assignedSkuId);
                         }
                     }
-                    for (String newLicense : newLicenses) {
+                    for (UUID newLicense : newLicenses) {
                         if (!assignedSkuIds.contains(newLicense)) {
                             // executing an assignment per single license in order to skip errors from invalid licenses
                             try {
-                                client.getAuthenticated().assignLicense(user.getObjectId(),
-                                        License.create(Collections.singletonList(newLicense), true));
+                                UserAssignLicenseParameterSet userAssignLicenseParameterSet =
+                                        new UserAssignLicenseParameterSet();
+                                AssignedLicense assignedLicense = new AssignedLicense();
+                                assignedLicense.skuId = newLicense;
+                                LinkedList<AssignedLicense> assignedLicenses = new LinkedList<>();
+                                assignedLicenses.add(assignedLicense);
+                                List<UUID> removedLicenses = new ArrayList<>();
+                                userAssignLicenseParameterSet.addLicenses = assignedLicenses;
+                                userAssignLicenseParameterSet.removeLicenses = removedLicenses;
+                                client.getAuthenticated().assignLicense(user.id, userAssignLicenseParameterSet);
                             } catch (RuntimeException ex) {
                                 LOG.error(ex, "While assigning license {0} to user {1}", newLicense, user);
                             }
@@ -558,8 +602,16 @@ public class AzureConnector implements
                     }
 
                     if (!toRemove.isEmpty()) {
-                        client.getAuthenticated().assignLicense(returnUid.getUidValue(),
-                                License.create(toRemove, false));
+                        try {
+                            UserAssignLicenseParameterSet userAssignLicenseParameterSet =
+                                    new UserAssignLicenseParameterSet();
+                            LinkedList<AssignedLicense> assignedLicenses = new LinkedList<>();
+                            userAssignLicenseParameterSet.removeLicenses = toRemove;
+                            userAssignLicenseParameterSet.addLicenses = assignedLicenses;
+                            client.getAuthenticated().assignLicense(user.id, userAssignLicenseParameterSet);
+                        } catch (RuntimeException ex) {
+                            LOG.error(ex, "While removing licenses from user {1}", user);
+                        }
                     }
                 }
 
@@ -579,20 +631,21 @@ public class AzureConnector implements
             String displayName = accessor.findString(AzureAttributes.GROUP_DISPLAY_NAME);
 
             Group group = new Group();
-            group.setObjectId(uid.getUidValue());
+            group.id = uid.getUidValue();
 
             if (!uid.getUidValue().equals(groupID)) {
                 LOG.info("Update - uid value different from Group ID");
 
-                group.setMailNickname(mailNickname);
-                group.setDisplayName(displayName);
+                group.mailNickname = mailNickname;
+                group.displayName = displayName;
             }
 
             try {
-                group.fromAttributes(replaceAttributes);
+                replaceAttributes.forEach(attribute ->
+                        doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
                 client.getAuthenticated().updateGroup(group);
 
-                returnUid = new Uid(group.getObjectId());
+                returnUid = new Uid(group.id);
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError(
                         "Could not update Group " + uid.getUidValue() + " from attributes ", e);
@@ -614,11 +667,154 @@ public class AzureConnector implements
     private ConnectorObject fromUser(final User user, final Set<String> attributesToGet) {
         ConnectorObjectBuilder builder = new ConnectorObjectBuilder();
         builder.setObjectClass(ObjectClass.ACCOUNT);
-        builder.setUid(user.getObjectId());
-        builder.setName(user.getMailNickname());
+        builder.setUid(user.id);
+        builder.setName(user.userPrincipalName);
 
         try {
-            for (Attribute toAttribute : user.toAttributes()) {
+            Set<Attribute> attrs = new HashSet<>();
+
+            Field[] fields = User.class.getDeclaredFields();
+            for (Field field : fields) {
+                if (field.getAnnotation(JsonIgnore.class) == null) {
+                    field.setAccessible(true);
+                    if (field.getName().equals(AzureAttributes.USER_PASSWORD_PROFILE) && user.passwordProfile != null) {
+                        attrs.add(AttributeBuilder.build(AzureAttributes.USER_PASSWORD_PROFILE,
+                                user.passwordProfile.password == null
+                                        ? null
+                                        : new GuardedString(user.passwordProfile.password.toCharArray())));
+                    } else if (field.getName().equals(AzureAttributes.USER_ACCOUNT_ENABLED)
+                            && user.accountEnabled != null) {
+                        attrs.add(AttributeBuilder.build(AzureAttributes.USER_ACCOUNT_ENABLED, user.accountEnabled));
+                    } else {
+                        switch (field.getName()) {
+                            case "displayName":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.displayName,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "id":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.id,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "city":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.city,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "country":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.country,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "department":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.department,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "businessPhones":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.businessPhones,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "givenName":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.givenName,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "onPremisesImmutableId":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.onPremisesImmutableId,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "jobTitle":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.jobTitle,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "mail":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.mail,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "mobilePhone":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.mobilePhone,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "preferredLanguage":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.preferredLanguage,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "officeLocation":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.officeLocation,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "postalCode":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.postalCode,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "state":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.state,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "streetAddress":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.streetAddress,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "surname":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.surname,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "usageLocation":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.usageLocation,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "companyName":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.companyName,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "creationType":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.creationType,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "employeeId":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.employeeId,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "onPremisesDistinguishedName":
+                                attrs.add(AzureAttributes.
+                                        doBuildAttributeFromClassField(user.onPremisesDistinguishedName,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "onPremisesSecurityIdentifier":
+                                attrs.add(AzureAttributes.
+                                        doBuildAttributeFromClassField(user.onPremisesSecurityIdentifier,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "showInAddressList":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.showInAddressList,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "proxyAddresses":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.proxyAddresses,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "userType":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.userType,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "otherMails":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.otherMails,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "provisionedPlans":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.provisionedPlans,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "assignedLicenses":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.assignedLicenses,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "assignedPlans":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.assignedPlans,
+                                        field.getName(), field.getType()).build());
+                                break;
+                        }
+                    }
+                }
+            }
+
+            for (Attribute toAttribute : attrs) {
                 String attributeName = toAttribute.getName();
                 for (String attributeToGetName : attributesToGet) {
                     if (OperationalAttributes.ENABLE_NAME.equals(attributeToGetName)
@@ -631,15 +827,15 @@ public class AzureConnector implements
                     }
                 }
             }
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
+        } catch (IllegalArgumentException ex) {
             LOG.error(ex, "While converting to attributes");
         }
 
         if (attributesToGet.contains(PredefinedAttributes.GROUPS_NAME)) {
             List<String> groupNames = new ArrayList<>();
-            List<Group> groups = client.getAuthenticated().getAllGroupsForUser(user.getObjectId());
+            List<Group> groups = client.getAuthenticated().getAllGroupsForUser(user.id);
             for (Group group : groups) {
-                groupNames.add(group.getMailNickname());
+                groupNames.add(group.mailNickname);
             }
             builder.addAttribute(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, groupNames));
         }
@@ -650,11 +846,71 @@ public class AzureConnector implements
     private ConnectorObject fromGroup(final Group group, final Set<String> attributesToGet) {
         ConnectorObjectBuilder builder = new ConnectorObjectBuilder();
         builder.setObjectClass(ObjectClass.GROUP);
-        builder.setUid(group.getObjectId());
-        builder.setName(group.getMailNickname());
+        builder.setUid(group.id);
+        builder.setName(group.mailNickname);
 
         try {
-            for (Attribute toAttribute : group.toAttributes()) {
+            Set<Attribute> attrs = new HashSet<>();
+
+            Field[] fields = Group.class.getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                switch (field.getName()) {
+                    case "id":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.id,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "mail":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.mail,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "mailEnabled":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.mailEnabled,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "onPremisesSecurityIdentifier":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.onPremisesSecurityIdentifier,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "proxyAddresses":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.proxyAddresses,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "description":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.description,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "securityEnabled":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.securityEnabled,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "classification":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.classification,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "groupTypes":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.groupTypes,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "preferredLanguage":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.preferredLanguage,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "securityIdentifier":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.securityIdentifier,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "theme":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.theme,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "visibility":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.visibility,
+                                field.getName(), field.getType()).build());
+                        break;
+                }
+            }
+            for (Attribute toAttribute : attrs) {
                 String attributeName = toAttribute.getName();
                 for (String attributeToGetName : attributesToGet) {
                     if (attributeName.equals(attributeToGetName)) {
@@ -663,12 +919,12 @@ public class AzureConnector implements
                     }
                 }
             }
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
+        } catch (IllegalArgumentException ex) {
             LOG.error(ex, "While converting to attributes");
         }
 
         if (attributesToGet.contains(AzureAttributes.GROUP_ID)) {
-            builder.addAttribute(AttributeBuilder.build(AzureAttributes.GROUP_ID, group.getObjectId()));
+            builder.addAttribute(AttributeBuilder.build(AzureAttributes.GROUP_ID, group.id));
         }
 
         return builder.build();
@@ -677,11 +933,51 @@ public class AzureConnector implements
     private ConnectorObject fromLicense(final SubscribedSku subscribedSku, final Set<String> attributesToGet) {
         ConnectorObjectBuilder builder = new ConnectorObjectBuilder();
         builder.setObjectClass(new ObjectClass(AzureAttributes.AZURE_LICENSE_NAME));
-        builder.setUid(subscribedSku.getObjectId());
-        builder.setName(subscribedSku.getSkuId());
+        builder.setUid(subscribedSku.id);
+        builder.setName(String.valueOf(subscribedSku.skuId));
 
         try {
-            for (Attribute toAttribute : subscribedSku.toAttributes()) {
+            Set<Attribute> attrs = new HashSet<>();
+
+            Field[] fields = SubscribedSku.class.getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                switch (field.getName()) {
+                    case "id":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.id,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "appliesTo":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.appliesTo,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "capabilityStatus":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.capabilityStatus,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "consumedUnits":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.consumedUnits,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "prepaidUnits":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.prepaidUnits,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "servicePlans":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.servicePlans,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "skuPartNumber":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.skuPartNumber,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case "oDataType":
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.oDataType,
+                                field.getName(), field.getType()).build());
+                        break;
+                }
+            }
+            for (Attribute toAttribute : attrs) {
                 String attributeName = toAttribute.getName();
                 for (String attributeToGetName : attributesToGet) {
                     if (attributeName.equals(attributeToGetName)) {
@@ -690,15 +986,170 @@ public class AzureConnector implements
                     }
                 }
             }
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
+        } catch (IllegalArgumentException ex) {
             LOG.error(ex, "While converting to attributes");
         }
 
         if (attributesToGet.contains(AzureAttributes.AZURE_LICENSE_NAME)) {
-            builder.addAttribute(AttributeBuilder.build(AzureAttributes.AZURE_LICENSE_NAME,
-                    subscribedSku.getObjectId()));
+            builder.addAttribute(AttributeBuilder.build(AzureAttributes.AZURE_LICENSE_NAME, subscribedSku.id));
         }
 
         return builder.build();
     }
+
+    private String getSkipToken(UserCollectionRequestBuilder request) {
+        String token = request.getRequestUrl().
+                substring(request.getRequestUrl().indexOf(SKIP_TOKEN_ID) + SKIP_TOKEN_ID.length());
+        return token.substring(0, token.indexOf("&"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void doUserSetAttribute(final String name, final List<Object> values, User user) {
+        Object value = values.isEmpty() ? null : values.get(0);
+        switch (name) {
+            case "displayName":
+                user.displayName = (String) value;
+                break;
+            case "id":
+                user.id = (String) value;
+                break;
+            case "city":
+                user.city = (String) value;
+                break;
+            case "country":
+                user.country = (String) value;
+                break;
+            case "department":
+                user.department = (String) value;
+                break;
+            case "businessPhones":
+                user.businessPhones = new ArrayList<>((List<String>) (List<?>) values);
+                break;
+            case "givenName":
+                user.givenName = (String) value;
+                break;
+            case "onPremisesImmutableId":
+                user.onPremisesImmutableId = (String) value;
+                break;
+            case "jobTitle":
+                user.jobTitle = (String) value;
+                break;
+            case "mail":
+                user.mail = (String) value;
+                break;
+            case "mobilePhone":
+                user.mobilePhone = (String) value;
+                break;
+            case "passwordPolicies":
+                user.passwordPolicies = (String) value;
+                break;
+            case "preferredLanguage":
+                user.preferredLanguage = (String) value;
+                break;
+            case "officeLocation":
+                user.officeLocation = (String) value;
+                break;
+            case "postalCode":
+                user.postalCode = (String) value;
+                break;
+            case "state":
+                user.state = (String) value;
+                break;
+            case "streetAddress":
+                user.streetAddress = (String) value;
+                break;
+            case "surname":
+                user.surname = (String) value;
+                break;
+            case "usageLocation":
+                user.usageLocation = (String) value;
+                break;
+            case "userPrincipalName":
+                user.userPrincipalName = (String) value;
+                break;
+            case "companyName":
+                user.companyName = (String) value;
+                break;
+            case "creationType":
+                user.creationType = (String) value;
+                break;
+            case "employeeId":
+                user.employeeId = (String) value;
+                break;
+            case "onPremisesDistinguishedName":
+                user.onPremisesDistinguishedName = (String) value;
+                break;
+            case "onPremisesSecurityIdentifier":
+                user.onPremisesSecurityIdentifier = (String) value;
+                break;
+            case "showInAddressList":
+                user.showInAddressList = (Boolean) value;
+                break;
+            case "proxyAddresses":
+                user.proxyAddresses = new ArrayList<>((List<String>) (List<?>) values);
+                break;
+            case "userType":
+                user.userType = (String) value;
+                break;
+            case "otherMails":
+                user.otherMails = new ArrayList<>((List<String>) (List<?>) values);
+                break;
+            case "provisionedPlans":
+                user.provisionedPlans = new ArrayList<>((List<ProvisionedPlan>) (List<?>) values);
+                break;
+            case "assignedLicenses":
+                user.assignedLicenses = new ArrayList<>((List<AssignedLicense>) (List<?>) values);
+                break;
+            case "assignedPlans":
+                user.assignedPlans = new ArrayList<>((List<AssignedPlan>) (List<?>) values);
+                break;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void doGroupSetAttribute(final String name, final List<Object> values, Group group) {
+        Object value = values.isEmpty() ? null : values.get(0);
+        switch (name) {
+            case "id":
+                group.id = (String) value;
+                break;
+            case "mail":
+                group.mail = (String) value;
+                break;
+            case "mailEnabled":
+                group.mailEnabled = (Boolean) value;
+                break;
+            case "onPremisesSecurityIdentifier":
+                group.onPremisesSecurityIdentifier = (String) value;
+                break;
+            case "proxyAddresses":
+                group.proxyAddresses = new ArrayList<>((List<String>) (List<?>) values);
+                break;
+            case "description":
+                group.description = (String) value;
+                break;
+            case "securityEnabled":
+                group.securityEnabled = (Boolean) value;
+                break;
+            case "classification":
+                group.classification = (String) value;
+                break;
+            case "groupTypes":
+                group.groupTypes = new ArrayList<>((List<String>) (List<?>) values);
+                break;
+            case "preferredLanguage":
+                group.preferredLanguage = (String) value;
+                break;
+            case "securityIdentifier":
+                group.securityIdentifier = (String) value;
+                break;
+            case "theme":
+                group.theme = (String) value;
+                break;
+            case "visibility":
+                group.visibility = (String) value;
+                break;
+        }
+    }
+
 }

@@ -42,6 +42,16 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     private String domain;
 
+    private String tenantId;
+
+    private String clientSecret;
+
+    private String scopes = "https://graph.microsoft.com/.default";
+
+    private String[] userAttributesToGet;
+
+    private String[] groupAttributesToGet;
+
     public final static String DEFAULT_RESOURCE_URI = "https://graph.windows.net";
 
     @ConfigurationProperty(order = 1, displayMessageKey = "clientId.display",
@@ -65,7 +75,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 3, displayMessageKey = "redirectURI.display",
-            helpMessageKey = "redirectURI.help", required = false)
+            helpMessageKey = "redirectURI.help")
     public String getRedirectURI() {
         return redirectURI;
     }
@@ -75,7 +85,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 4, displayMessageKey = "resourceURI.display",
-            helpMessageKey = "resourceURI.help", required = false)
+            helpMessageKey = "resourceURI.help")
     public String getResourceURI() {
         return resourceURI;
     }
@@ -112,6 +122,56 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     public void setDomain(final String domain) {
         this.domain = domain;
+    }
+
+    @ConfigurationProperty(order = 8, displayMessageKey = "tenantId.display",
+            helpMessageKey = "tenantId.help", required = true)
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(final String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    @ConfigurationProperty(order = 9, displayMessageKey = "clientSecret.display",
+            helpMessageKey = "clientSecret.help", required = true)
+    public String getClientSecret() {
+        return clientSecret;
+    }
+
+    public void setClientSecret(final String clientSecret) {
+        this.clientSecret = clientSecret;
+    }
+
+    @ConfigurationProperty(order = 10, displayMessageKey = "scopes.display",
+            helpMessageKey = "scopes.help", required = true)
+    public String getScopes() {
+        return scopes;
+    }
+
+    public void setScopes(final String scopes) {
+        this.scopes = scopes;
+    }
+
+    @ConfigurationProperty(order = 11, displayMessageKey = "userAttributesToGet.display",
+            helpMessageKey = "userAttributesToGet.help", required = true)
+    public String[] getUserAttributesToGet() {
+        return userAttributesToGet;
+    }
+
+    public void setUserAttributesToGet(String... userAttributesToGet) {
+        this.userAttributesToGet = userAttributesToGet.clone();
+    }
+
+    @ConfigurationProperty(order = 12, displayMessageKey = "groupAttributesToGet.display",
+            helpMessageKey = "groupAttributesToGet.help", required = true)
+    public String[] getGroupAttributesToGet() {
+        return groupAttributesToGet;
+    }
+
+    public void setGroupAttributesToGet(String... groupAttributesToGet) {
+        this.groupAttributesToGet = groupAttributesToGet.clone();
     }
 
     @Override

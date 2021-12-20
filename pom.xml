@@ -78,12 +78,9 @@
   <properties>
     <connid.version>1.5.0.2</connid.version>
     
-    <azure.version>1.7.0</azure.version>
-    <azure.adal4j.version>1.4.0</azure.adal4j.version>
-    <azure.client.authentication>1.3.0</azure.client.authentication>
-    
-    <jackson.version>2.10.0</jackson.version>
-    <cxf.version>3.1.18</cxf.version>
+    <microsoft.graph.version>5.8.0</microsoft.graph.version>
+    <azure.identity.version>1.4.2</azure.identity.version>
+    <azure.msal4j.version>1.11.0</azure.msal4j.version>
      
     <java.version>1.8</java.version>
         
@@ -91,6 +88,22 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.microsoft.graph</groupId>
+      <artifactId>microsoft-graph</artifactId>
+      <version>${microsoft.graph.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-identity</artifactId>
+      <version>${azure.identity.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.microsoft.azure</groupId>
+      <artifactId>msal4j</artifactId>
+      <version>${azure.msal4j.version}</version>
+    </dependency>
     <dependency>
       <groupId>net.tirasa.connid</groupId>
       <artifactId>connector-framework</artifactId>
@@ -100,112 +113,6 @@
       <groupId>net.tirasa.connid</groupId>
       <artifactId>connector-framework-internal</artifactId>
       <version>${connid.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.microsoft.azure</groupId>
-      <artifactId>azure-client-authentication</artifactId>
-      <version>${azure.client.authentication}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.datatype</groupId>
-          <artifactId>jackson-datatype-joda</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.squareup.retrofit2</groupId>
-          <artifactId>converter-jackson</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.squareup.retrofit2</groupId>
-          <artifactId>retrofit</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.reactivex</groupId>
-          <artifactId>rxjava</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.squareup.retrofit2</groupId>
-          <artifactId>adapter-rxjava</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.microsoft.azure</groupId>
-          <artifactId>azure-annotations</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>commons-codec</groupId>
-          <artifactId>commons-codec</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.squareup.okhttp3</groupId>
-          <artifactId>logging-interceptor</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.squareup.okhttp3</groupId>
-          <artifactId>okhttp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.squareup.okhttp3</groupId>
-          <artifactId>okhttp-urlconnection</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.jcip</groupId>
-          <artifactId>jcip-annotations</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.nimbusds</groupId>
-          <artifactId>lang-tag</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    
-    <dependency>
-      <groupId>javax.ws.rs</groupId>
-      <artifactId>javax.ws.rs-api</artifactId>
-      <version>2.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-rs-client</artifactId>
-      <version>${cxf.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.codehaus.woodstox</groupId>
-          <artifactId>woodstox-core-asl</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.ws.xmlschema</groupId>
-          <artifactId>xmlschema-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-transports-http-hc</artifactId>
-      <version>${cxf.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>jcl-over-slf4j</artifactId>
-        </exclusion>
-      </exclusions> 
-    </dependency>
-    
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>

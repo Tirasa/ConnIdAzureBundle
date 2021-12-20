@@ -16,15 +16,11 @@
 package net.tirasa.connid.bundles.azure;
 
 import java.util.Map;
-import java.util.Random;
-import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
 
 public class AzureConnectorTestsUtils {
 
     private static final Log LOG = Log.getLog(AzureConnectorTestsUtils.class);
-
-    private static final Random RANDOM = new Random();
 
     public static AzureConnectorConfiguration buildConfiguration(Map<String, String> configuration) {
         AzureConnectorConfiguration azureConnectorConfiguration = new AzureConnectorConfiguration();
@@ -53,6 +49,21 @@ public class AzureConnectorTestsUtils {
                 case "oauth2.username":
                     azureConnectorConfiguration.setUsername(entry.getValue());
                     break;
+                case "oauth2.tenantId":
+                    azureConnectorConfiguration.setTenantId(entry.getValue());
+                    break;
+                case "oauth2.clientSecret":
+                    azureConnectorConfiguration.setClientSecret(entry.getValue());
+                    break;
+                case "oauth2.scopes":
+                    azureConnectorConfiguration.setScopes(entry.getValue());
+                    break;
+                case "oauth2.userAttributesToGet":
+                    azureConnectorConfiguration.setUserAttributesToGet(entry.getValue());
+                    break;
+                case "oauth2.groupAttributesToGet":
+                    azureConnectorConfiguration.setGroupAttributesToGet(entry.getValue());
+                    break;
                 default:
                     LOG.warn("Occurrence of an non defined parameter");
                     break;
@@ -64,9 +75,5 @@ public class AzureConnectorTestsUtils {
     public static boolean isConfigurationValid(final AzureConnectorConfiguration connectorConfiguration) {
         connectorConfiguration.validate();
         return true;
-    }
-
-    public static String createRandomName(final String namePrefix) {
-        return namePrefix + StringUtil.randomString(RANDOM, (namePrefix.length() - 30));
     }
 }

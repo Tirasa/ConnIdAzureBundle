@@ -25,22 +25,21 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import net.tirasa.connid.bundles.azure.dto.AvailableExtensionProperties;
-import net.tirasa.connid.bundles.azure.dto.Group;
-import net.tirasa.connid.bundles.azure.dto.License;
-import net.tirasa.connid.bundles.azure.dto.PagedUsers;
-import net.tirasa.connid.bundles.azure.dto.User;
+import com.microsoft.graph.http.GraphServiceException;
+import com.microsoft.graph.models.AssignedLicense;
+import com.microsoft.graph.models.Group;
+import com.microsoft.graph.models.User;
+import com.microsoft.graph.models.UserAssignLicenseParameterSet;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
-import net.tirasa.connid.bundles.azure.service.NoSuchEntityException;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
 import org.identityconnectors.common.logging.Log;
@@ -118,6 +117,9 @@ public class AzureConnectorTests {
         assertNotNull(CONF.getRedirectURI());
         assertNotNull(CONF.getResourceURI());
         assertNotNull(CONF.getUsername());
+        assertNotNull(CONF.getTenantId());
+        assertNotNull(CONF.getClientSecret());
+        assertNotNull(CONF.getScopes());
     }
 
     private boolean testLicenses() {
@@ -174,7 +176,7 @@ public class AzureConnectorTests {
                 search(ObjectClass.ACCOUNT, null, handler, new OperationOptionsBuilder().setPageSize(1).build());
 
         assertNotNull(result);
-        assertNotNull(result.getPagedResultsCookie());
+        //assertNotNull(result.getPagedResultsCookie());
         assertEquals(-1, result.getRemainingPagedResults());
     }
 
@@ -195,7 +197,7 @@ public class AzureConnectorTests {
             try {
                 client.getAuthenticated().getUser(testUserUid);
                 fail(); // must fail
-            } catch (NoSuchEntityException e) {
+            } catch (GraphServiceException e) {
                 assertNotNull(e);
             }
         }
@@ -212,7 +214,7 @@ public class AzureConnectorTests {
             try {
                 client.getAuthenticated().getGroup(testGroupUid);
                 fail(); // must fail
-            } catch (NoSuchEntityException e) {
+            } catch (GraphServiceException e) {
                 assertNotNull(e);
             }
         }
@@ -259,6 +261,7 @@ public class AzureConnectorTests {
             Set<Attribute> groupAttrs = new HashSet<>();
             groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_DISPLAY_NAME, groupName));
             groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_MAIL_NICKNAME, groupName));
+            groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_MAIL_ENABLED, false));
             groupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_SECURITY_ENABLED, true));
             groupAttrs.add(AttributeBuilder.build("description", "Description test"));
 
@@ -270,10 +273,9 @@ public class AzureConnectorTests {
             // GET GROUP
             Group group = client.getAuthenticated().getGroup(testGroupUid);
             assertNotNull(group);
-            assertEquals(group.getObjectId(), testGroupUid);
+            assertEquals(group.id, testGroupUid);
 
-            LOG.info("Created Group with name {0} on service!",
-                    group.getDisplayName());
+            LOG.info("Created Group with name {0} on service!", group.displayName);
 
             // CREATE USER
             String username = UUID.randomUUID().toString();
@@ -283,6 +285,8 @@ public class AzureConnectorTests {
             Set<Attribute> userAttrs = new HashSet<>();
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, username));
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_MAIL_NICKNAME, username));
+            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_PRINCIPAL_NAME,
+                    username + "@" + CONF.getDomain()));
             userAttrs.add(password);
             userAttrs.add(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, testGroupUid));
             if (testLicenses()) {
@@ -300,16 +304,15 @@ public class AzureConnectorTests {
             // GET USER
             User user = client.getAuthenticated().getUser(testUserUid);
             assertNotNull(user);
-            assertEquals(user.getObjectId(), created.getUidValue());
-            assertEquals(user.getAccountEnabled(), true);
+            assertEquals(user.id, created.getUidValue());
+            assertEquals(true, user.accountEnabled);
             if (testLicenses()) {
-                assertFalse(user.getAssignedLicenses().isEmpty());
-                assertEquals(user.getAssignedLicenses().get(0).getSkuId(), VALID_LICENSE);
-                assertEquals(user.getUsageLocation(), USAGE_LOCATION);
+                assertFalse(user.assignedLicenses.isEmpty());
+                assertEquals(String.valueOf(user.assignedLicenses.get(0).skuId), VALID_LICENSE);
+                assertEquals(user.usageLocation, USAGE_LOCATION);
             }
 
-            LOG.info("Created User with name {0} on service!",
-                    user.getDisplayName());
+            LOG.info("Created User with name {0} on service!", user.displayName);
 
             // UPDATE USER PASSWORD
             userAttrs.remove(password);
@@ -321,7 +324,7 @@ public class AzureConnectorTests {
             // GET USER
             user = client.getAuthenticated().getUser(updated.getUidValue());
             assertNotNull(user);
-            assertEquals(user.getObjectId(), updated.getUidValue());
+            assertEquals(user.id, updated.getUidValue());
             // can't test password update here, Azure API always return '"passwordProfile": null'
 
             // GET USER GROUPS
@@ -329,10 +332,9 @@ public class AzureConnectorTests {
 
             assertNotNull(groupsForUser);
             assertEquals(1, groupsForUser.size());
-            assertEquals(groupName, groupsForUser.get(0).getDisplayName());
+            assertEquals(groupName, groupsForUser.get(0).displayName);
 
-            LOG.info("Added User with name {0} to Group with name : {1}",
-                    user.getDisplayName(), group.getDisplayName());
+            LOG.info("Added User with name {0} to Group with name : {1}", user.displayName, group.displayName);
 
             Thread.sleep(2000);
 
@@ -351,8 +353,7 @@ public class AzureConnectorTests {
 
             testGroupUid = updated.getUidValue();
 
-            LOG.info("Updated Group with old name {0} and new name {1}",
-                    group.getDisplayName(), groupName);
+            LOG.info("Updated Group with old name {0} and new name {1}", group.displayName, groupName);
 
             List<Group> userGroups = client.getAuthenticated().getAllGroupsForUser(testUserUid);
             assertNotNull(userGroups);
@@ -360,12 +361,12 @@ public class AzureConnectorTests {
 
             // GET MEMBERS OF
             List<String> memberGroups =
-                    client.getAuthenticated().getMemberGroups("users", testUserUid, false);
+                    client.getAuthenticated().getMemberGroups(testUserUid, false);
             assertNotNull(memberGroups);
             LOG.info("getMemberGroups : {0}", memberGroups);
 
             List<String> memberObjects =
-                    client.getAuthenticated().getMemberObjects("users", testUserUid, false);
+                    client.getAuthenticated().getMemberObjects(testUserUid, false);
             assertNotNull(memberObjects);
             LOG.info("getMemberObjects : {0}", memberObjects);
 
@@ -390,41 +391,39 @@ public class AzureConnectorTests {
                     ObjectClass.ACCOUNT, new Uid(testUserUid), userAttrs, new OperationOptionsBuilder().build());
             assertNotNull(updated);
             assertEquals(testUserUid, updated.getUidValue());
-            assertNotEquals(user.getDisplayName(), username);
+            assertNotEquals(user.displayName, username);
 
             // GET NEW USER (to check 'accountEnabled' update and licenses)
-            assertNotEquals(user.getAccountEnabled(), newStatusValue);
+            assertNotEquals(user.accountEnabled, newStatusValue);
             User updatedUser = client.getAuthenticated().getUser(testUserUid);
-            assertEquals(updatedUser.getAccountEnabled(), newStatusValue);
+            assertEquals(updatedUser.accountEnabled, newStatusValue);
             if (testLicenses()) {
-                assertTrue(updatedUser.getAssignedLicenses().isEmpty());
-                assertEquals(updatedUser.getUsageLocation(), USAGE_LOCATION);
+                assertTrue(updatedUser.assignedLicenses.isEmpty());
+                assertEquals(updatedUser.usageLocation, USAGE_LOCATION);
             }
 
-            LOG.info("Updated User with old name {0} and new name {1}",
-                    user.getDisplayName(), username);
+            LOG.info("Updated User with old name {0} and new name {1}", user.displayName, username);
 
             // UPDATE USER (using 'userPrincipalName' attribute)
             String anotherUsername = UUID.randomUUID().toString();
 
             userAttrs.clear();
             userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, anotherUsername));
-            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_PRINCIPAL_NAME, user.getUserPrincipalName()));
+            userAttrs.add(AttributeBuilder.build(AzureAttributes.USER_PRINCIPAL_NAME, user.userPrincipalName));
 
             updated = connector.update(
                     ObjectClass.ACCOUNT, new Uid(testUserUid), userAttrs, new OperationOptionsBuilder().build());
             assertNotNull(updated);
             assertEquals(testUserUid, updated.getUidValue());
-            assertNotEquals(updatedUser.getDisplayName(), anotherUsername);
+            assertNotEquals(updatedUser.displayName, anotherUsername);
 
             // GET NEW USER (to check update using 'userPrincipalName' attribute)
             User anotherUpdatedUser = client.getAuthenticated().getUser(testUserUid);
-            assertEquals(anotherUpdatedUser.getUserPrincipalName(), user.getUserPrincipalName());
+            assertEquals(anotherUpdatedUser.userPrincipalName, user.userPrincipalName);
 
             testUserUid = updated.getUidValue();
 
-            LOG.info("Updated User with old name {0} and new name {1}",
-                    user.getDisplayName(), anotherUsername);
+            LOG.info("Updated User with old name {0} and new name {1}", user.displayName, anotherUsername);
 
             // GET ALL USERS
             List<User> users = client.getAuthenticated().getAllUsers();
@@ -444,16 +443,12 @@ public class AzureConnectorTests {
             assertEquals(groupMembers.size(), 0);
 
             // GET USERS / GROUPS BY NAME
-            List<User> usersFound1 = client.getAuthenticated().getUsersByName(user.getDisplayName());
-            List<User> usersFound2 = client.getAuthenticated().getUsersByName(user.getMailNickname());
+            List<User> usersFound1 = client.getAuthenticated().getUsersByName(user.displayName);
+            List<User> usersFound2 = client.getAuthenticated().getUsersByName(user.userPrincipalName);
             assertNotNull(usersFound1);
             assertTrue(usersFound1.size() > 0);
             assertNotNull(usersFound2);
             assertTrue(usersFound2.size() > 0);
-
-            // TEST USER / GROUP "to attributes" CONVERSION
-            LOG.info("User to Attributes: {0}", user.toAttributes());
-            LOG.info("Group to Attributes: {0}", group.toAttributes());
         } catch (Exception e) {
             LOG.error(e, "While running test");
             fail(e.getMessage());
@@ -464,7 +459,7 @@ public class AzureConnectorTests {
 
     @Test
     public void pagedSearch() {
-        final List<ConnectorObject> results = new ArrayList<ConnectorObject>();
+        final List<ConnectorObject> results = new ArrayList<>();
         final ResultsHandler handler = new ResultsHandler() {
 
             @Override
@@ -507,49 +502,44 @@ public class AzureConnectorTests {
         try {
             // CREATE USER
             User user = new User();
-            user.setAccountEnabled(true);
-            user.setDisplayName("TestUser-" + uid.toString());
-            user.setMailNickname("testuser-" + uid.toString());
-//            user.setUserPrincipalName("testuser@" + CONF.getDomain()); // will be [mailNickname@AZURE_DOMAIN]
-            user.setPassword(AzureUtils.createPassword("Password01"));
-            user.setUsageLocation("NL");
+            user.accountEnabled = true;
+            user.displayName = "TestUser-" + uid.toString();
+            user.mailNickname = "testuser-" + uid.toString();
+            user.userPrincipalName= "testuser" + uid.toString().substring(0,4) + "@" + CONF.getDomain();
+            user.passwordProfile = AzureUtils.createPassword("Password01");
+            user.usageLocation = "NL";
 
             User userCreated = client.getAuthenticated().createUser(user);
             assertNotNull(userCreated);
-            assertNotNull(userCreated.getObjectId());
+            assertNotNull(userCreated.id);
             LOG.info("userCreated : {0}", userCreated);
 
             // CREATE GROUP
             Group group = new Group();
-            group.setDisplayName("TestGroup-" + uid.toString());
-            group.setMailNickname("testgroup-" + uid.toString());
-            group.setSecurityEnabled(true);
+            group.displayName = "TestGroup-" + uid.toString();
+            group.mailNickname = "testgroup-" + uid.toString();
+            group.mailEnabled = false;
+            group.securityEnabled = true;
 
             Group groupCreated = client.getAuthenticated().createGroup(group);
             assertNotNull(groupCreated);
-            assertNotNull(groupCreated.getObjectId());
+            assertNotNull(groupCreated.id);
             LOG.info("groupCreated : {0}", groupCreated);
 
-            testUser = userCreated.getObjectId();
-            testGroup = groupCreated.getObjectId();
+            testUser = userCreated.id;
+            testGroup = groupCreated.id;
 
             // GET USER
             User userFound = client.getAuthenticated().getUser(testUser);
             assertNotNull(userFound);
-            assertNotNull(userFound.getObjectId());
+            assertNotNull(userFound.id);
             LOG.info("User found : {0}", userFound);
-
-            // USER TO ATTRIBUTES
-            LOG.info("Attributes user : {0}", userFound.toAttributes());
 
             // GET GROUP
             Group groupFound = client.getAuthenticated().getGroup(testGroup);
             assertNotNull(groupFound);
-            assertNotNull(groupFound.getObjectId());
+            assertNotNull(groupFound.id);
             LOG.info("Group found : {0}", groupFound);
-
-            // GROUP TO ATTRIBUTES
-            LOG.info("Attributes group : {0}", groupFound.toAttributes());
 
             // TEST LICENSES
             if (testLicenses()) {
@@ -567,19 +557,18 @@ public class AzureConnectorTests {
             assertFalse(groups.isEmpty());
             LOG.info("Groups : {0}", groups);
 
-            PagedUsers usersPaged = client.getAuthenticated().getAllUsers(1);
-            assertNotNull(usersPaged);
-            assertFalse(usersPaged.getUsers().isEmpty());
-            assertTrue(usersPaged.getUsers().size() == 1);
-            assertNotNull(usersPaged.getSkipToken());
-            LOG.info("Users paged : {0}", usersPaged);
+            List<User> userList = client.getAuthenticated().getAllUsers(1);
+            assertNotNull(userList);
+            assertFalse(userList.isEmpty());
+            assertEquals(1, userList.size());
+            LOG.info("Users paged : {0}", userList);
 
-            PagedUsers usersPaged2 =
-                    client.getAuthenticated().getAllUsersNextPage(2, usersPaged.getSkipToken(), false);
-            assertNotNull(usersPaged2);
-            assertFalse(usersPaged2.getUsers().isEmpty());
-            assertFalse(usersPaged2.getUsers().get(0).getObjectId().equals(usersPaged.getUsers().get(0).getObjectId()));
-            LOG.info("Users paged 2 : {0}", usersPaged2);
+            List<User> userList2 =
+                    client.getAuthenticated().getAllUsersNextPage(2, "").buildRequest().get().getCurrentPage();
+            assertNotNull(userList2);
+            assertFalse(userList2.isEmpty());
+            assertNotEquals(userList2.get(0).id, userList.get(0).id);
+            LOG.info("Users paged 2 : {0}", userList2);
 
             List<User> usersFound = client.getAuthenticated().getUsersByName("testuser-" + uid.toString());
             assertNotNull(usersFound);
@@ -593,20 +582,20 @@ public class AzureConnectorTests {
 
             // UPDATE USER
             User newUser = new User();
-            newUser.setObjectId(userFound.getObjectId());
-            newUser.setCity("City update");
+            newUser.id = userFound.id;
+            newUser.city = "City update";
             User userUpdated = client.getAuthenticated().updateUser(newUser);
             assertNotNull(userUpdated);
-            assertFalse(userUpdated.getCity().equals(userFound.getCity()));
+            assertNotEquals(userUpdated.city, userFound.city);
             LOG.info("userUpdated : {0}", userUpdated);
 
             // UPDATE GROUP
             Group newGroup = new Group();
-            newGroup.setObjectId(groupFound.getObjectId());
-            newGroup.setDisplayName("Group name update");
+            newGroup.id = groupFound.id;
+            newGroup.displayName = "Group name update";
             Group groupUpdated = client.getAuthenticated().updateGroup(newGroup);
             assertNotNull(groupUpdated);
-            assertFalse(groupUpdated.getDisplayName().equals(groupFound.getDisplayName()));
+            assertNotEquals(groupUpdated.displayName, groupFound.displayName);
             LOG.info("groupUpdated : {0}", groupUpdated);
 
             // ADD USER TO GROUP
@@ -629,26 +618,19 @@ public class AzureConnectorTests {
 
             // GET MEMBERS OF
             List<String> memberGroups =
-                    client.getAuthenticated().getMemberGroups("users", testUser, false);
+                    client.getAuthenticated().getMemberGroups(testUser, true);
             assertNotNull(memberGroups);
             LOG.info("getMemberGroups : {0}", memberGroups);
 
             List<String> memberObjects =
-                    client.getAuthenticated().getMemberObjects("users", testUser, false);
+                    client.getAuthenticated().getMemberObjects(testUser, true);
             assertNotNull(memberObjects);
             LOG.info("getMemberObjects : {0}", memberObjects);
 
             // DELETE USER FROM GROUP
             client.getAuthenticated().deleteUserFromGroup(testUser, testGroup);
-            memberOf =
-                    client.getAuthenticated().isMemberOf(testUser, testGroup);
+            memberOf = client.getAuthenticated().isMemberOf(testUser, testGroup);
             assertFalse(memberOf);
-
-            // AVAILABLE EXTENSION PROPERTIES
-            AvailableExtensionProperties availableProperties =
-                    client.getAuthenticated().getAvailableExtensionProperties(testUser, false);
-            assertNotNull(availableProperties);
-            LOG.info("availableProperties : {0}", availableProperties);
         } catch (Exception e) {
             LOG.error(e, "While running test");
             fail(e.getMessage());
@@ -669,27 +651,39 @@ public class AzureConnectorTests {
             assertTrue(licenses.contains(VALID_LICENSE));
 
             // ASSIGN LICENSE TO USER
-            License assignedLicense = License.create(Arrays.asList(VALID_LICENSE), true);
+            AssignedLicense assignedLicense = new AssignedLicense();
+            assignedLicense.skuId = UUID.fromString(VALID_LICENSE);
+            UserAssignLicenseParameterSet userAssignLicenseParameterSet = new UserAssignLicenseParameterSet();
+            LinkedList<AssignedLicense> assignedLicenses = new LinkedList<>();
+            assignedLicenses.add(assignedLicense);
+            List<UUID> removedLicenses = new ArrayList<>();
+            userAssignLicenseParameterSet.addLicenses = assignedLicenses;
+            userAssignLicenseParameterSet.removeLicenses = removedLicenses;
             LOG.info("New assignedLicense : {0}", assignedLicense);
-            client.getAuthenticated().assignLicense(testUser, assignedLicense);
+            client.getAuthenticated().assignLicense(testUser, userAssignLicenseParameterSet);
 
             User userWithNewLicense = client.getAuthenticated().getUser(testUser);
             assertNotNull(userWithNewLicense);
-            assertNotNull(userWithNewLicense.getObjectId());
-            assertFalse(userWithNewLicense.getAssignedLicenses().isEmpty());
-            assertNotNull(userWithNewLicense.getAssignedLicenses().get(0).getSkuId());
-            assertTrue(userWithNewLicense.getAssignedLicenses().get(0).getSkuId().equals(VALID_LICENSE));
+            assertNotNull(userWithNewLicense.id);
+            assertFalse(userWithNewLicense.assignedLicenses.isEmpty());
+            assertNotNull(userWithNewLicense.assignedLicenses.get(0).skuId);
+            assertEquals(userWithNewLicense.assignedLicenses.get(0).skuId, UUID.fromString(VALID_LICENSE));
             LOG.info("User with new license : {0}", userWithNewLicense);
 
             // REMOVE LICENSE FROM USER
-            assignedLicense = License.create(Arrays.asList(VALID_LICENSE), false);
+            userAssignLicenseParameterSet = new UserAssignLicenseParameterSet();
+            removedLicenses = new ArrayList<>();
+            removedLicenses.add(UUID.fromString(VALID_LICENSE));
+            assignedLicenses = new LinkedList<>();
+            userAssignLicenseParameterSet.removeLicenses = removedLicenses;
+            userAssignLicenseParameterSet.addLicenses = assignedLicenses;
             LOG.info("New assignedLicense : {0}", assignedLicense);
-            client.getAuthenticated().assignLicense(testUser, assignedLicense);
+            client.getAuthenticated().assignLicense(testUser, userAssignLicenseParameterSet);
 
             User userWithRemovedLicense = client.getAuthenticated().getUser(testUser);
             assertNotNull(userWithRemovedLicense);
-            assertNotNull(userWithRemovedLicense.getObjectId());
-            assertTrue(userWithRemovedLicense.getAssignedLicenses().isEmpty());
+            assertNotNull(userWithRemovedLicense.id);
+            assertTrue(userWithRemovedLicense.assignedLicenses.isEmpty());
             LOG.info("User with no more licenses : {0}", userWithRemovedLicense);
         }
     }

@@ -15,12 +15,10 @@
  */
 package net.tirasa.connid.bundles.azure.utils;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import net.tirasa.connid.bundles.azure.AzureConnector;
-import net.tirasa.connid.bundles.azure.dto.AzureObject;
 import net.tirasa.connid.bundles.azure.service.AzureService;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
@@ -140,9 +138,6 @@ public final class AzureAttributes {
         }
         Class<?> typeClass = String.class; // default
         switch (type) {
-            case "String":
-                typeClass = String.class;
-                break;
             case "Boolean":
                 typeClass = Boolean.class;
                 break;
@@ -153,11 +148,6 @@ public final class AzureAttributes {
                 break;
         }
         return typeClass;
-    }
-
-    public static AttributeBuilder buildAttributeFromClassField(final Field field,
-            final AzureObject that) throws IllegalArgumentException, IllegalAccessException {
-        return doBuildAttributeFromClassField(field.get(that), USER_ID, field.getType());
     }
 
     public static AttributeBuilder doBuildAttributeFromClassField(final Object value,
