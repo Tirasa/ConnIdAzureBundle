@@ -34,7 +34,6 @@ import com.microsoft.graph.requests.GraphServiceClient;
 import com.microsoft.graph.requests.GroupCollectionPage;
 import com.microsoft.graph.requests.SubscribedSkuCollectionPage;
 import com.microsoft.graph.requests.UserCollectionPage;
-import com.microsoft.graph.requests.UserCollectionRequestBuilder;
 import net.tirasa.connid.bundles.azure.AzureConnectorConfiguration;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
@@ -93,12 +92,11 @@ public class AzureClient extends AzureService {
      * @param skipToken
      * @return paged list of Users
      */
-    public UserCollectionRequestBuilder getAllUsersNextPage(final int pageSize, final String skipToken) {
+    public UserCollectionPage getAllUsersNextPage(final int pageSize, final String skipToken) {
         LOG.ok("Get all users next page with page size {0}", pageSize);
         GraphServiceClient graphClient = getGraphServiceClient();
-        UserCollectionPage userCollectionPage = graphClient.users().buildRequest().
+        return graphClient.users().buildRequest().
                 top(pageSize).skipToken(skipToken).orderBy(AzureAttributes.USER_DISPLAY_NAME).get();
-        return userCollectionPage.getNextPage();
     }
 
     /**
@@ -109,7 +107,6 @@ public class AzureClient extends AzureService {
     public User getUser(final String userId) {
         LOG.ok("Getting user {0}", userId);
         GraphServiceClient graphClient = getGraphServiceClient();
-        String.join(",", config.getUserAttributesToGet());
         return graphClient.users(userId).buildRequest().
                 select(String.join(",", config.getUserAttributesToGet())).get();
     }
@@ -243,20 +240,11 @@ public class AzureClient extends AzureService {
      * @param skipToken
      * @return paged list of Groups
      */
-    public List<Group> getAllGroupsNextPage(final int pageSize, final String skipToken) {
+    public GroupCollectionPage getAllGroupsNextPage(final int pageSize, final String skipToken) {
         LOG.ok("Get all groups next page with page size {0}", pageSize);
         GraphServiceClient graphClient = getGraphServiceClient();
-        GroupCollectionPage groupCollectionPage = graphClient.groups().buildRequest().
-                top(pageSize).orderBy(AzureAttributes.GROUP_DISPLAY_NAME).get();
-        List<Group> groups = new ArrayList<>();
-        if (groupCollectionPage != null && groupCollectionPage.getNextPage() != null) {
-            groupCollectionPage = groupCollectionPage.getNextPage().buildRequest().
-                    top(pageSize).skipToken(skipToken).orderBy(AzureAttributes.GROUP_DISPLAY_NAME).get();
-            if (groupCollectionPage != null) {
-                groups = groupCollectionPage.getCurrentPage();
-            }
-        }
-        return groups;
+        return graphClient.groups().buildRequest().
+                top(pageSize).skipToken(skipToken).orderBy(AzureAttributes.GROUP_DISPLAY_NAME).get();
     }
 
     /**
@@ -340,6 +328,17 @@ public class AzureClient extends AzureService {
 
     /**
      *
+     * @param id
+     * @return Deleted DirectoryObject if exists, null otherwise
+     */
+    public DirectoryObject getDeletedDirectoryObject(final String id) {
+        LOG.ok("Get deleted directory object {0} if exists", id);
+        GraphServiceClient graphClient = getGraphServiceClient();
+        return graphClient.directory().deletedItems(id).buildRequest().get();
+    }
+
+    /**
+     *
      * @param user
      * @return created User
      */
@@ -395,6 +394,16 @@ public class AzureClient extends AzureService {
     public void deleteGroup(final String groupId) {
         GraphServiceClient graphClient = getGraphServiceClient();
         graphClient.groups(groupId).buildRequest().delete();
+    }
+
+    /**
+     *
+     * @param id
+     * @return restored DirectoryObject
+     */
+    public DirectoryObject restoreDirectoryObject(final String id) {
+        GraphServiceClient graphClient = getGraphServiceClient();
+        return graphClient.directory().deletedItems(id).restore().buildRequest().post();
     }
 
     /**
