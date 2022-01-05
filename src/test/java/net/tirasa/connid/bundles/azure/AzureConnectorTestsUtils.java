@@ -64,6 +64,9 @@ public class AzureConnectorTestsUtils {
                 case "oauth2.groupAttributesToGet":
                     azureConnectorConfiguration.setGroupAttributesToGet(entry.getValue());
                     break;
+                case "oauth2.restoreItems":
+                    azureConnectorConfiguration.setRestoreItems(Boolean.parseBoolean(entry.getValue()));
+                    break;
                 default:
                     LOG.warn("Occurrence of an non defined parameter");
                     break;

@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 import com.microsoft.graph.http.GraphServiceException;
 import com.microsoft.graph.models.AssignedLicense;
+import com.microsoft.graph.models.DirectoryObject;
 import com.microsoft.graph.models.Group;
 import com.microsoft.graph.models.User;
 import com.microsoft.graph.models.UserAssignLicenseParameterSet;
@@ -449,6 +450,61 @@ public class AzureConnectorTests {
             assertTrue(usersFound1.size() > 0);
             assertNotNull(usersFound2);
             assertTrue(usersFound2.size() > 0);
+
+            if (CONF.getRestoreItems()) {
+                //DELETE USER
+                connector.delete(ObjectClass.ACCOUNT, new Uid(testUserUid), new OperationOptionsBuilder().build());
+                try {
+                    client.getAuthenticated().getUser(testUserUid);
+                    fail(); // must fail
+                } catch (RuntimeException e) {
+                    assertNotNull(e);
+                }
+
+                //CREATE MICROSOFT 365 GROUP
+                String group365Name = UUID.randomUUID().toString();
+
+                Set<Attribute> group365Attrs = new HashSet<>();
+                group365Attrs.add(AttributeBuilder.build(AzureAttributes.GROUP_DISPLAY_NAME, group365Name));
+                group365Attrs.add(AttributeBuilder.build(AzureAttributes.GROUP_MAIL_NICKNAME, group365Name));
+                group365Attrs.add(AttributeBuilder.build(AzureAttributes.GROUP_MAIL_ENABLED, true));
+                group365Attrs.add(AttributeBuilder.build(AzureAttributes.GROUP_SECURITY_ENABLED, false));
+                group365Attrs.add(AttributeBuilder.build("description", "Description test"));
+                LinkedList<String> groupTypesList = new LinkedList<>();
+                groupTypesList.add("Unified");
+                group365Attrs.add(AttributeBuilder.build("groupTypes", groupTypesList));
+
+                Uid createdGroup365 = connector.create(ObjectClass.GROUP, group365Attrs,
+                        new OperationOptionsBuilder().build());
+                assertNotNull(createdGroup365);
+
+                String testGroup365Uid = createdGroup365.getUidValue();
+                Group group365 = client.getAuthenticated().getGroup(testGroup365Uid);
+                assertNotNull(group365);
+
+                //DELETE GROUP
+                connector.delete(ObjectClass.GROUP, new Uid(testGroup365Uid), new OperationOptionsBuilder().build());
+                try {
+                    client.getAuthenticated().getGroup(testGroup365Uid);
+                    fail(); // must fail
+                } catch (RuntimeException e) {
+                    assertNotNull(e);
+                }
+
+                //RESTORE USER
+                Set<Attribute> restoredUserAttrs = new HashSet<>();
+                restoredUserAttrs.add(AttributeBuilder.build(AzureAttributes.USER_ID, testUserUid));
+                Uid restoredUser = connector.create(ObjectClass.ACCOUNT, restoredUserAttrs,
+                        new OperationOptionsBuilder().build());
+                assertNotNull(restoredUser);
+
+                //RESTORE GROUP
+                Set<Attribute> restoredGroupAttrs = new HashSet<>();
+                restoredGroupAttrs.add(AttributeBuilder.build(AzureAttributes.GROUP_ID, testGroup365Uid));
+                Uid restoredGroup = connector.create(ObjectClass.GROUP, restoredGroupAttrs,
+                        new OperationOptionsBuilder().build());
+                assertNotNull(restoredGroup);
+            }
         } catch (Exception e) {
             LOG.error(e, "While running test");
             fail(e.getMessage());
@@ -563,8 +619,8 @@ public class AzureConnectorTests {
             assertEquals(1, userList.size());
             LOG.info("Users paged : {0}", userList);
 
-            List<User> userList2 =
-                    client.getAuthenticated().getAllUsersNextPage(2, "").buildRequest().get().getCurrentPage();
+            List<User> userList2 = client.getAuthenticated().getAllUsersNextPage(2, "").
+                    getNextPage().buildRequest().get().getCurrentPage();
             assertNotNull(userList2);
             assertFalse(userList2.isEmpty());
             assertNotEquals(userList2.get(0).id, userList.get(0).id);
@@ -631,6 +687,60 @@ public class AzureConnectorTests {
             client.getAuthenticated().deleteUserFromGroup(testUser, testGroup);
             memberOf = client.getAuthenticated().isMemberOf(testUser, testGroup);
             assertFalse(memberOf);
+
+            if (CONF.getRestoreItems()) {
+                //DELETE USER
+                client.getAuthenticated().deleteUser(testUser);
+                try {
+                    client.getAuthenticated().getUser(testUser);
+                    fail(); // must fail
+                } catch (RuntimeException e) {
+                    assertNotNull(e);
+                }
+
+                //CREATE MICROSOFT 365 GROUP
+                Group group365 = new Group();
+                group365.displayName = "TestGroup-" + uid;
+                group365.mailNickname = "testgroup-" + uid;
+                group365.mailEnabled = true;
+                group365.securityEnabled = false;
+                LinkedList<String> groupTypesList = new LinkedList<>();
+                groupTypesList.add("Unified");
+                group365.groupTypes = groupTypesList;
+
+                Group group365Created = client.getAuthenticated().createGroup(group365);
+                assertNotNull(group365Created);
+                assertNotNull(group365Created.id);
+                LOG.info("groupCreated : {0}", group365Created);
+
+                String testGroup365 = group365Created.id;
+
+                //DELETE GROUP
+                client.getAuthenticated().deleteGroup(testGroup365);
+                try {
+                    client.getAuthenticated().getGroup(testGroup365);
+                    fail(); // must fail
+                } catch (RuntimeException e) {
+                    assertNotNull(e);
+                }
+
+                //RESTORE USER
+                DirectoryObject directoryObject = client.getAuthenticated().restoreDirectoryObject(testUser);
+                assertNotNull(directoryObject);
+                assertNotNull(directoryObject.id);
+                LOG.info("User restored : {0}", directoryObject);
+                userFound = client.getAuthenticated().getUser(directoryObject.id);
+                assertNotNull(userFound);
+
+                //RESTORE GROUP
+                directoryObject = client.getAuthenticated().restoreDirectoryObject(testGroup365);
+                assertNotNull(directoryObject);
+                assertNotNull(directoryObject.id);
+                LOG.info("Group restored : {0}", directoryObject);
+                groupFound = client.getAuthenticated().getGroup(directoryObject.id);
+                assertNotNull(groupFound);
+                assertNotNull(groupFound.mail);
+            }
         } catch (Exception e) {
             LOG.error(e, "While running test");
             fail(e.getMessage());

@@ -52,6 +52,8 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     private String[] groupAttributesToGet;
 
+    private boolean restoreItems;
+
     public final static String DEFAULT_RESOURCE_URI = "https://graph.windows.net";
 
     @ConfigurationProperty(order = 1, displayMessageKey = "clientId.display",
@@ -172,6 +174,16 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     public void setGroupAttributesToGet(String... groupAttributesToGet) {
         this.groupAttributesToGet = groupAttributesToGet.clone();
+    }
+
+    @ConfigurationProperty(order = 13, displayMessageKey = "restoreItems.display",
+            helpMessageKey = "restoreItems.help")
+    public boolean getRestoreItems() {
+        return restoreItems;
+    }
+
+    public void setRestoreItems(boolean restoreItems) {
+        this.restoreItems = restoreItems;
     }
 
     @Override

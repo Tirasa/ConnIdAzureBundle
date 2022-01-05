@@ -27,12 +27,15 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.microsoft.graph.models.AssignedLicense;
 import com.microsoft.graph.models.AssignedPlan;
+import com.microsoft.graph.models.DirectoryObject;
 import com.microsoft.graph.models.Group;
 import com.microsoft.graph.models.PasswordProfile;
 import com.microsoft.graph.models.ProvisionedPlan;
 import com.microsoft.graph.models.SubscribedSku;
 import com.microsoft.graph.models.User;
 import com.microsoft.graph.models.UserAssignLicenseParameterSet;
+import com.microsoft.graph.requests.GroupCollectionPage;
+import com.microsoft.graph.requests.GroupCollectionRequestBuilder;
 import com.microsoft.graph.requests.UserCollectionPage;
 import com.microsoft.graph.requests.UserCollectionRequestBuilder;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
@@ -177,19 +180,15 @@ public class AzureConnector implements
                 try {
                     if (pagesSize != -1) {
                         if (StringUtil.isNotBlank(cookie)) {
-                            UserCollectionRequestBuilder request =
+                            UserCollectionPage request =
                                     client.getAuthenticated().getAllUsersNextPage(pagesSize, cookie);
-                            UserCollectionPage userCollectionPage = request.buildRequest().get();
-                            if (userCollectionPage != null) {
-                                users = userCollectionPage.getCurrentPage();
-                                String skipToken = getSkipToken(request);
-                                cookie = userCollectionPage.getNextPage() != null ? skipToken : null;
-                            }
+                            users = request.getCurrentPage();
+                            cookie = request.getNextPage() != null ? getSkipToken(request.getNextPage()) : null;
                         } else {
                             users = client.getAuthenticated().getAllUsers(pagesSize);
 
                             UserCollectionRequestBuilder request =
-                                    client.getAuthenticated().getAllUsersNextPage(pagesSize, "");
+                                    client.getAuthenticated().getAllUsersNextPage(pagesSize, "").getNextPage();
                             String skipToken = getSkipToken(request);
                             cookie = request.buildRequest().get().getNextPage() != null ? skipToken : null;
                         }
@@ -234,13 +233,17 @@ public class AzureConnector implements
                 try {
                     if (pagesSize != -1) {
                         if (StringUtil.isNotBlank(cookie)) {
-                            groups = client.getAuthenticated().getAllGroupsNextPage(pagesSize, cookie);
-
-                            //cookie = groups.size() > pagesSize ? pagedResult.getSkipToken() : null;
+                            GroupCollectionPage request =
+                                    client.getAuthenticated().getAllGroupsNextPage(pagesSize, cookie);
+                            groups = request.getCurrentPage();
+                            cookie = request.getNextPage() != null ? getGroupSkipToken(request.getNextPage()) : null;
                         } else {
                             groups = client.getAuthenticated().getAllGroups(pagesSize);
 
-                            //cookie = pagedResult.getSkipToken();
+                            GroupCollectionRequestBuilder request =
+                                    client.getAuthenticated().getAllGroupsNextPage(pagesSize, "").getNextPage();
+                            cookie = request.buildRequest().get().getNextPage() != null
+                                    ? getGroupSkipToken(request) : null;
                         }
                     } else {
                         groups = client.getAuthenticated().getAllGroups();
@@ -309,7 +312,11 @@ public class AzureConnector implements
 
         final AttributesAccessor accessor = new AttributesAccessor(createAttributes);
 
-        if (ObjectClass.ACCOUNT.equals(objectClass)) {
+        String id = accessor.findString(AzureAttributes.USER_ID);
+        if (configuration.getRestoreItems() && id != null && client.getDeletedDirectoryObject(id) != null) {
+            DirectoryObject directoryObject = client.restoreDirectoryObject(id);
+            return new Uid(directoryObject.id);
+        } else if (ObjectClass.ACCOUNT.equals(objectClass)) {
             User user = new User();
             User createdUser = new User();
             String username = accessor.findString(AzureAttributes.USER_MAIL_NICKNAME);
@@ -998,6 +1005,12 @@ public class AzureConnector implements
     }
 
     private String getSkipToken(UserCollectionRequestBuilder request) {
+        String token = request.getRequestUrl().
+                substring(request.getRequestUrl().indexOf(SKIP_TOKEN_ID) + SKIP_TOKEN_ID.length());
+        return token.substring(0, token.indexOf("&"));
+    }
+
+    private String getGroupSkipToken(GroupCollectionRequestBuilder request) {
         String token = request.getRequestUrl().
                 substring(request.getRequestUrl().indexOf(SKIP_TOKEN_ID) + SKIP_TOKEN_ID.length());
         return token.substring(0, token.indexOf("&"));
