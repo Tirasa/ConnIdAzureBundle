@@ -43,4 +43,21 @@ public class AzureUtils {
         LOG.error(ex, message);
         throw ConnectorException.wrap(ex);
     }
+
+    public static String getFilter(final AzureFilter filters) {
+        switch (filters.getFilterOp()) {
+            case EQUALS:
+                return filters.getAttribute().getName() + " eq '" + filters.getValue() + "'";
+            case STARTS_WITH:
+                return "startswith(" + filters.getAttribute().getName() + ",'"  + filters.getValue() + "')";
+            case ENDS_WITH:
+                return "endswith(" + filters.getAttribute().getName() + ",'" + filters.getValue() + "')";
+            case AND:
+                return getFilter(filters.getFilters().get(0)) + " and " + getFilter(filters.getFilters().get(1));
+            case OR:
+                return getFilter(filters.getFilters().get(0)) + " or " + getFilter(filters.getFilters().get(1));
+            default:
+                throw new ConnectorException("Invalid search filter");
+        }
+    }
 }

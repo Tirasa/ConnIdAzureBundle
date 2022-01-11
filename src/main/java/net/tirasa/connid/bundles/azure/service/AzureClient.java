@@ -36,6 +36,7 @@ import com.microsoft.graph.requests.SubscribedSkuCollectionPage;
 import com.microsoft.graph.requests.UserCollectionPage;
 import net.tirasa.connid.bundles.azure.AzureConnectorConfiguration;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
+import net.tirasa.connid.bundles.azure.utils.AzureFilter;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
 import org.identityconnectors.common.logging.Log;
 
@@ -113,32 +114,28 @@ public class AzureClient extends AzureService {
 
     /**
      *
-     * @param username
-     * @return List of Users with specified username
+     * @param filters
+     * @return List of Users with specified filters values
      */
-    public List<User> getUsersByName(final String username) {
-        LOG.ok("Searching user by {0}", username);
+    public List<User> getUsersFilteredBy(final AzureFilter filters) {
         GraphServiceClient graphClient = getGraphServiceClient();
-        List<QueryOption> queryOptions = new ArrayList<>();
-        queryOptions.add(new QueryOption("$filter",
-                AzureAttributes.USER_DISPLAY_NAME
-                        + " eq '"
-                        + username
-                        + "' or "
-                        + AzureAttributes.USER_MAIL_NICKNAME
-                        + " eq '"
-                        + username
-                        + "' or "
-                        + AzureAttributes.USER_PRINCIPAL_NAME
-                        + " eq '"
-                        + username
-                        + "'"));
-        UserCollectionPage userCollectionPage = graphClient.users().buildRequest(queryOptions).get();
-        List<User> users = new ArrayList<>();
+
+        //This request requires the ConsistencyLevel header set to eventual
+        //because the request has both the $orderBy and $filter query parameters
+        LinkedList<Option> requestOptions = new LinkedList<>();
+        requestOptions.add(new HeaderOption("ConsistencyLevel", "eventual"));
+
+        StringBuilder queryFilter = new StringBuilder();
+        queryFilter.append(AzureUtils.getFilter(filters));
+        LOG.ok("Searching users with filter {0}", queryFilter);
+        UserCollectionPage userCollectionPage = graphClient.users().buildRequest(requestOptions).
+                select(String.join(",", config.getUserAttributesToGet())).
+                filter(queryFilter.toString()).get();
+
+        List<User> users = null;
         if (userCollectionPage != null) {
             users = userCollectionPage.getCurrentPage();
         }
-
         return users;
     }
 
@@ -281,34 +278,10 @@ public class AzureClient extends AzureService {
 
     /**
      *
-     * @param groupName
-     * @return List of Groups
+     * @param filters
+     * @return List of Groups with specified filters values
      */
-    public List<Group> getGroupsByName(final String groupName) {
-        LOG.ok("Searching group by {0}", groupName);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        List<QueryOption> queryOptions = new ArrayList<>();
-        queryOptions.add(new QueryOption("$filter",
-                AzureAttributes.GROUP_DISPLAY_NAME
-                        + " eq '"
-                        + groupName
-                        + "'"));
-
-        GroupCollectionPage groupCollectionPage = graphClient.groups().buildRequest(queryOptions).get();
-        List<Group> groups = null;
-        if (groupCollectionPage != null) {
-            groups = groupCollectionPage.getCurrentPage();
-        }
-        return groups;
-    }
-
-    /**
-     *
-     * @param groupNamePart
-     * @return List of Groups whose displayName attribute starts with specified string
-     */
-    public List<Group> getGroupsStartsWith(final String groupNamePart) {
-        LOG.ok("Searching group with displayName starting with {0}", groupNamePart);
+    public List<Group> getGroupsFilteredBy(final AzureFilter filters) {
         GraphServiceClient graphClient = getGraphServiceClient();
 
         //This request requires the ConsistencyLevel header set to eventual
@@ -316,8 +289,12 @@ public class AzureClient extends AzureService {
         LinkedList<Option> requestOptions = new LinkedList<>();
         requestOptions.add(new HeaderOption("ConsistencyLevel", "eventual"));
 
+        StringBuilder queryFilter = new StringBuilder();
+        queryFilter.append(AzureUtils.getFilter(filters));
+        LOG.ok("Searching groups with filter {0}", queryFilter);
         GroupCollectionPage groupCollectionPage = graphClient.groups().buildRequest(requestOptions).
-                filter(" startswith(" + AzureAttributes.GROUP_DISPLAY_NAME + ",'" + groupNamePart + "')").get();
+                select(String.join(",", config.getGroupAttributesToGet())).
+                filter(queryFilter.toString()).get();
 
         List<Group> groups = null;
         if (groupCollectionPage != null) {

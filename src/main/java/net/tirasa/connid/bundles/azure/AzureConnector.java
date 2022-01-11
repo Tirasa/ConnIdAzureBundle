@@ -18,7 +18,6 @@ package net.tirasa.connid.bundles.azure;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,6 +39,8 @@ import com.microsoft.graph.requests.UserCollectionPage;
 import com.microsoft.graph.requests.UserCollectionRequestBuilder;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
+import net.tirasa.connid.bundles.azure.utils.AzureFilter;
+import net.tirasa.connid.bundles.azure.utils.AzureFilterOp;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
 import org.identityconnectors.common.CollectionUtil;
 
@@ -62,8 +63,6 @@ import org.identityconnectors.framework.common.objects.ResultsHandler;
 import org.identityconnectors.framework.common.objects.Schema;
 import org.identityconnectors.framework.common.objects.SearchResult;
 import org.identityconnectors.framework.common.objects.Uid;
-import org.identityconnectors.framework.common.objects.filter.EqualsFilter;
-import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.common.objects.filter.FilterTranslator;
 import org.identityconnectors.framework.spi.Configuration;
 import org.identityconnectors.framework.spi.Connector;
@@ -79,7 +78,7 @@ import org.identityconnectors.framework.spi.operations.UpdateOp;
 @ConnectorClass(displayNameKey = "AzureConnector.connector.display",
         configurationClass = AzureConnectorConfiguration.class)
 public class AzureConnector implements
-        Connector, CreateOp, DeleteOp, SchemaOp, SearchOp<Filter>, TestOp, UpdateOp {
+        Connector, CreateOp, DeleteOp, SchemaOp, SearchOp<AzureFilter>, TestOp, UpdateOp {
 
     private AzureConnectorConfiguration configuration;
 
@@ -144,24 +143,34 @@ public class AzureConnector implements
     }
 
     @Override
-    public FilterTranslator<Filter> createFilterTranslator(
+    public FilterTranslator<AzureFilter> createFilterTranslator(
             final ObjectClass objectClass,
             final OperationOptions options) {
 
-        return Collections::singletonList;
+        LOG.ok("check the ObjectClass");
+        if (objectClass == null) {
+            throw new IllegalArgumentException("Object class not supported");
+        }
+        LOG.ok("The ObjectClass is ok");
+        return new AzureFilterTranslator(objectClass);
     }
 
     @Override
-    public void executeQuery(ObjectClass objectClass, Filter query, ResultsHandler handler, OperationOptions options) {
+    public void executeQuery(ObjectClass objectClass, AzureFilter query, ResultsHandler handler,
+                             OperationOptions options) {
         LOG.ok("Connector READ");
 
         Attribute key = null;
-        if (query instanceof EqualsFilter) {
-            Attribute filterAttr = ((EqualsFilter) query).getAttribute();
+        boolean moreFilters = true;
+        if (query != null) {
+            Attribute filterAttr = query.getAttribute();
             if (filterAttr instanceof Uid) {
                 key = filterAttr;
             } else if (ObjectClass.ACCOUNT.equals(objectClass) || ObjectClass.GROUP.equals(objectClass)) {
                 key = filterAttr;
+            }
+            if (key == null && !query.getFilters().isEmpty()) {
+                moreFilters = false;
             }
         }
 
@@ -171,7 +180,7 @@ public class AzureConnector implements
         }
 
         if (ObjectClass.ACCOUNT.equals(objectClass)) {
-            if (key == null) {
+            if (key == null && moreFilters) {
                 List<User> users = null;
                 int remainingResults = -1;
                 int pagesSize = options.getPageSize() != null ? options.getPageSize() : -1;
@@ -200,16 +209,15 @@ public class AzureConnector implements
                 }
 
                 if (users != null) {
-                    for (User user : users) {
-                        handler.handle(fromUser(user, attributesToGet));
-                    }
+                    users.forEach(user -> handler.handle(fromUser(user, attributesToGet)));
                 }
 
                 if (handler instanceof SearchResultsHandler) {
                     ((SearchResultsHandler) handler).handleResult(new SearchResult(cookie, remainingResults));
                 }
             } else {
-                if (Uid.NAME.equals(key.getName()) || AzureAttributes.USER_ID.equals(key.getName())) {
+                if (AzureFilterOp.EQUALS == query.getFilterOp() &&
+                        (Uid.NAME.equals(key.getName()) || AzureAttributes.USER_ID.equals(key.getName()))) {
                     User result = null;
                     try {
                         result = client.getAuthenticated().getUser(AttributeUtil.getAsStringValue(key));
@@ -220,11 +228,22 @@ public class AzureConnector implements
                     if (result != null) {
                         handler.handle(fromUser(result, attributesToGet));
                     }
+                } else {
+                    List<User> result = null;
+                    try {
+                        result = client.getAuthenticated().getUsersFilteredBy(query);
+                    } catch (Exception e) {
+                        AzureUtils.wrapGeneralError("While searching with key : "
+                                + key.getName() + " - " + AttributeUtil.getAsStringValue(key), e);
+                    }
+                    if (result != null) {
+                        result.forEach(user -> handler.handle(fromUser(user, attributesToGet)));
+                    }
                 }
             }
 
         } else if (ObjectClass.GROUP.equals(objectClass)) {
-            if (key == null) {
+            if (key == null && moreFilters) {
                 List<Group> groups = null;
                 int remainingResults = -1;
                 int pagesSize = options.getPageSize() != null ? options.getPageSize() : -1;
@@ -253,9 +272,7 @@ public class AzureConnector implements
                 }
 
                 if (groups != null) {
-                    for (Group group : groups) {
-                        handler.handle(fromGroup(group, attributesToGet));
-                    }
+                    groups.forEach(group -> handler.handle(fromGroup(group, attributesToGet)));
                 }
 
                 if (handler instanceof SearchResultsHandler) {
@@ -263,7 +280,8 @@ public class AzureConnector implements
                 }
 
             } else {
-                if (Uid.NAME.equals(key.getName()) || AzureAttributes.GROUP_ID.equals(key.getName())) {
+                if (AzureFilterOp.EQUALS == query.getFilterOp() &&
+                        (Uid.NAME.equals(key.getName()) || AzureAttributes.GROUP_ID.equals(key.getName()))) {
                     Group result = null;
                     try {
                         result = client.getAuthenticated().getGroup(AttributeUtil.getAsStringValue(key));
@@ -272,6 +290,17 @@ public class AzureConnector implements
                     }
                     if (result != null) {
                         handler.handle(fromGroup(result, attributesToGet));
+                    }
+                } else {
+                    List<Group> result = null;
+                    try {
+                        result = client.getAuthenticated().getGroupsFilteredBy(query);
+                    } catch (Exception e) {
+                        AzureUtils.wrapGeneralError("While searching with key : "
+                                + key.getName() + " - " + AttributeUtil.getAsStringValue(key), e);
+                    }
+                    if (result != null) {
+                        result.forEach(group -> handler.handle(fromGroup(group, attributesToGet)));
                     }
                 }
             }
@@ -700,6 +729,10 @@ public class AzureConnector implements
                                 break;
                             case "id":
                                 attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.id,
+                                        field.getName(), field.getType()).build());
+                                break;
+                            case "userPrincipalName":
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.userPrincipalName,
                                         field.getName(), field.getType()).build());
                                 break;
                             case "city":
