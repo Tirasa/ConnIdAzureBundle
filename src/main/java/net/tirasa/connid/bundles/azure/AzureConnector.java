@@ -147,7 +147,7 @@ public class AzureConnector implements
             final ObjectClass objectClass,
             final OperationOptions options) {
 
-        LOG.info("check the ObjectClass");
+        LOG.ok("check the ObjectClass");
         if (objectClass == null) {
             throw new IllegalArgumentException("Object class not supported");
         }
@@ -216,7 +216,7 @@ public class AzureConnector implements
                     ((SearchResultsHandler) handler).handleResult(new SearchResult(cookie, remainingResults));
                 }
             } else {
-                if (AzureFilterOp.EQUALS.equals(query.getFilterOp()) &&
+                if (AzureFilterOp.EQUALS == query.getFilterOp() &&
                         (Uid.NAME.equals(key.getName()) || AzureAttributes.USER_ID.equals(key.getName()))) {
                     User result = null;
                     try {
@@ -280,7 +280,7 @@ public class AzureConnector implements
                 }
 
             } else {
-                if (AzureFilterOp.EQUALS.equals(query.getFilterOp()) &&
+                if (AzureFilterOp.EQUALS == query.getFilterOp() &&
                         (Uid.NAME.equals(key.getName()) || AzureAttributes.GROUP_ID.equals(key.getName()))) {
                     Group result = null;
                     try {
