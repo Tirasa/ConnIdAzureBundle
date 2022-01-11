@@ -42,6 +42,8 @@ import com.microsoft.graph.models.User;
 import com.microsoft.graph.models.UserAssignLicenseParameterSet;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
+import net.tirasa.connid.bundles.azure.utils.AzureFilter;
+import net.tirasa.connid.bundles.azure.utils.AzureFilterOp;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
@@ -177,7 +179,7 @@ public class AzureConnectorTests {
                 search(ObjectClass.ACCOUNT, null, handler, new OperationOptionsBuilder().setPageSize(1).build());
 
         assertNotNull(result);
-        //assertNotNull(result.getPagedResultsCookie());
+        assertNotNull(result.getPagedResultsCookie());
         assertEquals(-1, result.getRemainingPagedResults());
     }
 
@@ -444,8 +446,14 @@ public class AzureConnectorTests {
             assertEquals(groupMembers.size(), 0);
 
             // GET USERS / GROUPS BY NAME
-            List<User> usersFound1 = client.getAuthenticated().getUsersByName(user.displayName);
-            List<User> usersFound2 = client.getAuthenticated().getUsersByName(user.userPrincipalName);
+            AzureFilter filter = new AzureFilter(AzureFilterOp.EQUALS,
+                    AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, anotherUsername),
+                    anotherUsername, false, null);
+            List<User> usersFound1 = client.getAuthenticated().getUsersFilteredBy(filter);
+            filter = new AzureFilter(AzureFilterOp.EQUALS,
+                    AttributeBuilder.build(AzureAttributes.USER_PRINCIPAL_NAME, user.userPrincipalName),
+                    user.userPrincipalName, false, null);
+            List<User> usersFound2 = client.getAuthenticated().getUsersFilteredBy(filter);
             assertNotNull(usersFound1);
             assertTrue(usersFound1.size() > 0);
             assertNotNull(usersFound2);
@@ -626,12 +634,18 @@ public class AzureConnectorTests {
             assertNotEquals(userList2.get(0).id, userList.get(0).id);
             LOG.info("Users paged 2 : {0}", userList2);
 
-            List<User> usersFound = client.getAuthenticated().getUsersByName("testuser-" + uid.toString());
+            AzureFilter filter = new AzureFilter(AzureFilterOp.EQUALS,
+                    AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, "testuser-" + uid),
+                    "testuser-" + uid, false, new ArrayList<>());
+            List<User> usersFound = client.getAuthenticated().getUsersFilteredBy(filter);
             assertNotNull(usersFound);
             assertFalse(usersFound.isEmpty());
             LOG.info("User found : {0}", usersFound);
 
-            List<Group> groupsFound = client.getAuthenticated().getGroupsStartsWith("test");
+            filter = new AzureFilter(AzureFilterOp.STARTS_WITH,
+                    AttributeBuilder.build(AzureAttributes.GROUP_DISPLAY_NAME, "test"),
+                    "test", false, new ArrayList<>());
+            List<Group> groupsFound = client.getAuthenticated().getGroupsFilteredBy(filter);
             assertNotNull(usersFound);
             assertFalse(usersFound.isEmpty());
             LOG.info("User found : {0}", groupsFound);
