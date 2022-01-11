@@ -39,7 +39,7 @@ The Azure bundle is part of the [ConnId](http://connid.tirasa.net) project.
 </dependency>
 ```
 
-where `connid.azure.version` is one of [available](http://repo1.maven.org/maven2/net/tirasa/connid/bundles/net.tirasa.connid.bundles.azure/).
+where `connid.azure.version` is one of [available](https://repo1.maven.org/maven2/net/tirasa/connid/bundles/net.tirasa.connid.bundles.azure/).
 
 ### Downloads
 
