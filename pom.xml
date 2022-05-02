@@ -23,7 +23,7 @@
   <parent>
     <groupId>net.tirasa.connid</groupId>
     <artifactId>connid</artifactId>
-    <version>1.5.0.2</version>
+    <version>1.5.1.0</version>
   </parent>
     
   <groupId>net.tirasa.connid.bundles</groupId>
@@ -76,7 +76,7 @@
   </mailingLists>
   
   <properties>
-    <connid.version>1.5.0.2</connid.version>
+    <connid.version>1.5.1.0</connid.version>
     
     <microsoft.graph.version>5.8.0</microsoft.graph.version>
     <azure.identity.version>1.4.2</azure.identity.version>
@@ -150,7 +150,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version> 
+        <version>3.10.1</version> 
         <inherited>false</inherited>
         <configuration>
           <source>${java.version}</source>
@@ -276,7 +276,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <inherited>true</inherited>
         <configuration>
-          <appendAssemblyId>false</appendAssemblyId>
+          <appendAssemblyId>true</appendAssemblyId>
           <descriptors>
             <descriptor>src/assemble/connector.xml</descriptor>
           </descriptors>
@@ -288,7 +288,7 @@
               <ConnectorBundle-Version>${project.version}</ConnectorBundle-Version>
             </manifestEntries>
           </archive>
-        </configuration>                
+        </configuration>
         <executions>
           <execution>
             <id>make-assembly</id>
