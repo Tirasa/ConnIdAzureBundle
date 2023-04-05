@@ -196,10 +196,10 @@ public class AzureConnector implements
                         } else {
                             users = client.getAuthenticated().getAllUsers(pagesSize);
 
-                            UserCollectionRequestBuilder request =
+                            UserCollectionRequestBuilder nextPageRequest =
                                     client.getAuthenticated().getAllUsersNextPage(pagesSize, "").getNextPage();
-                            String skipToken = getSkipToken(request);
-                            cookie = request.buildRequest().get().getNextPage() != null ? skipToken : null;
+                            cookie = nextPageRequest != null && nextPageRequest.buildRequest().get()
+                                    .getNextPage() != null ? getSkipToken(nextPageRequest) : null;
                         }
                     } else {
                         users = client.getAuthenticated().getAllUsers();
