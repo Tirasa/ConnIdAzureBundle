@@ -32,6 +32,8 @@ import org.identityconnectors.framework.common.objects.SchemaBuilder;
 
 public final class AzureAttributes {
 
+    public static final String ID = "id";
+
     public static final String USER_ID = "objectId";
 
     public static final String USER_DISPLAY_NAME = "displayName";
