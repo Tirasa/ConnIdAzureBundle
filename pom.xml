@@ -23,7 +23,7 @@
   <parent>
     <groupId>net.tirasa.connid</groupId>
     <artifactId>connid</artifactId>
-    <version>1.5.1.0</version>
+    <version>1.5.2.0</version>
   </parent>
     
   <groupId>net.tirasa.connid.bundles</groupId>
@@ -76,11 +76,11 @@
   </mailingLists>
   
   <properties>
-    <connid.version>1.5.1.0</connid.version>
+    <connid.version>1.5.2.0</connid.version>
     
-    <microsoft.graph.version>5.8.0</microsoft.graph.version>
-    <azure.identity.version>1.4.2</azure.identity.version>
-    <azure.msal4j.version>1.11.0</azure.msal4j.version>
+    <microsoft.graph.version>5.51.0</microsoft.graph.version>
+    <azure.identity.version>1.8.1</azure.identity.version>
+    <azure.msal4j.version>1.13.7</azure.msal4j.version>
      
     <java.version>1.8</java.version>
         

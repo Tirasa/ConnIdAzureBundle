@@ -15,6 +15,7 @@
  */
 package net.tirasa.connid.bundles.azure;
 
+import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.framework.spi.AbstractConfiguration;
 import org.identityconnectors.framework.spi.ConfigurationProperty;
@@ -48,9 +49,10 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     private String scopes = "https://graph.microsoft.com/.default";
 
-    private String[] userAttributesToGet;
+    private String[] userAttributesToGet = new String[]{AzureAttributes.USER_PRINCIPAL_NAME, AzureAttributes.ID};
 
-    private String[] groupAttributesToGet;
+    private String[] groupAttributesToGet = new String[]{AzureAttributes.ID, AzureAttributes.GROUP_MAIL_ENABLED,
+            AzureAttributes.GROUP_SECURITY_ENABLED};
 
     private boolean restoreItems;
 
