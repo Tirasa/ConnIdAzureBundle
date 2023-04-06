@@ -261,14 +261,16 @@ public class AzureConnector implements
                             GroupCollectionPage request =
                                     client.getAuthenticated().getAllGroupsNextPage(pagesSize, cookie);
                             groups = request.getCurrentPage();
-                            cookie = request.getNextPage() != null ? getGroupSkipToken(request.getNextPage()) : null;
+                            cookie = request != null && request.getNextPage() != null
+                                    ? getGroupSkipToken(request.getNextPage()) : null;
                         } else {
                             groups = client.getAuthenticated().getAllGroups(pagesSize);
 
-                            GroupCollectionRequestBuilder request =
+                            GroupCollectionRequestBuilder nextPageRequest =
                                     client.getAuthenticated().getAllGroupsNextPage(pagesSize, "").getNextPage();
-                            cookie = request.buildRequest().get().getNextPage() != null
-                                    ? getGroupSkipToken(request) : null;
+                            cookie = nextPageRequest != null && nextPageRequest.buildRequest().get()
+                                    .getNextPage() != null
+                                    ? getGroupSkipToken(nextPageRequest) : null;
                         }
                     } else {
                         groups = client.getAuthenticated().getAllGroups();
@@ -378,7 +380,8 @@ public class AzureConnector implements
 
                 user.accountEnabled = status;
 
-                createAttributes.forEach(attr -> doUserSetAttribute(attr.getName(), attr.getValue(), user));
+                createAttributes.stream().filter(attribute -> attribute.getValue() != null).forEach(attribute ->
+                        doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
 
                 createdUser = client.getAuthenticated().createUser(user);
             } catch (Exception e) {
@@ -434,8 +437,8 @@ public class AzureConnector implements
                 group.displayName = displayName;
                 group.mailNickname = groupName;
 
-                createAttributes.forEach(attribute
-                        -> doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
+                createAttributes.stream().filter(attribute -> attribute.getValue() != null).forEach(attribute ->
+                        doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
                 createdGroup = client.getAuthenticated().createGroup(group);
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not create Group : " + groupName, e);
@@ -533,7 +536,8 @@ public class AzureConnector implements
             }
 
             try {
-                replaceAttributes.forEach(attr -> doUserSetAttribute(attr.getName(), attr.getValue(), user));
+                replaceAttributes.stream().filter(attribute -> attribute.getValue() != null).forEach(attribute ->
+                        doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
 
                 // password
                 GuardedString password = accessor.getPassword();
@@ -688,7 +692,8 @@ public class AzureConnector implements
             }
 
             try {
-                replaceAttributes.forEach(attr -> doGroupSetAttribute(attr.getName(), attr.getValue(), group));
+                replaceAttributes.stream().filter(attribute -> attribute.getValue() != null).forEach(attribute ->
+                        doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
                 client.getAuthenticated().updateGroup(group);
 
                 returnUid = new Uid(group.id);
