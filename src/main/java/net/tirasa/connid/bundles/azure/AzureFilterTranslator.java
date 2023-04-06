@@ -15,6 +15,8 @@
  */
 package net.tirasa.connid.bundles.azure;
 
+import java.util.Arrays;
+import java.util.List;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureFilter;
 import net.tirasa.connid.bundles.azure.utils.AzureFilterOp;
@@ -33,8 +35,6 @@ import org.identityconnectors.framework.common.objects.filter.GreaterThanOrEqual
 import org.identityconnectors.framework.common.objects.filter.LessThanFilter;
 import org.identityconnectors.framework.common.objects.filter.LessThanOrEqualFilter;
 import org.identityconnectors.framework.common.objects.filter.StartsWithFilter;
-import java.util.Arrays;
-import java.util.List;
 
 public class AzureFilterTranslator extends AbstractFilterTranslator<AzureFilter> {
 

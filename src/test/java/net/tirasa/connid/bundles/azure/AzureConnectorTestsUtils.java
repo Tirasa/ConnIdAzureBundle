@@ -18,11 +18,11 @@ package net.tirasa.connid.bundles.azure;
 import java.util.Map;
 import org.identityconnectors.common.logging.Log;
 
-public class AzureConnectorTestsUtils {
+public final class AzureConnectorTestsUtils {
 
     private static final Log LOG = Log.getLog(AzureConnectorTestsUtils.class);
 
-    public static AzureConnectorConfiguration buildConfiguration(Map<String, String> configuration) {
+    public static AzureConnectorConfiguration buildConfiguration(final Map<String, String> configuration) {
         AzureConnectorConfiguration azureConnectorConfiguration = new AzureConnectorConfiguration();
 
         for (Map.Entry<String, String> entry : configuration.entrySet()) {
@@ -78,5 +78,9 @@ public class AzureConnectorTestsUtils {
     public static boolean isConfigurationValid(final AzureConnectorConfiguration connectorConfiguration) {
         connectorConfiguration.validate();
         return true;
+    }
+
+    private AzureConnectorTestsUtils() {
+        // private constructor for static utility class
     }
 }

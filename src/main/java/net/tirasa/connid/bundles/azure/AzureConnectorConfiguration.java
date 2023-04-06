@@ -29,6 +29,8 @@ import org.identityconnectors.framework.spi.StatefulConfiguration;
  */
 public class AzureConnectorConfiguration extends AbstractConfiguration implements StatefulConfiguration {
 
+    public static final String DEFAULT_RESOURCE_URI = "https://graph.windows.net";
+
     private String clientId;
 
     private String authority;
@@ -49,14 +51,13 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     private String scopes = "https://graph.microsoft.com/.default";
 
-    private String[] userAttributesToGet = new String[]{AzureAttributes.USER_PRINCIPAL_NAME, AzureAttributes.ID};
+    private String[] userAttributesToGet = new String[] {
+        AzureAttributes.USER_PRINCIPAL_NAME, AzureAttributes.ID };
 
-    private String[] groupAttributesToGet = new String[]{AzureAttributes.ID, AzureAttributes.GROUP_MAIL_ENABLED,
-            AzureAttributes.GROUP_SECURITY_ENABLED};
+    private String[] groupAttributesToGet = new String[] {
+        AzureAttributes.ID, AzureAttributes.GROUP_MAIL_ENABLED, AzureAttributes.GROUP_SECURITY_ENABLED };
 
     private boolean restoreItems;
-
-    public final static String DEFAULT_RESOURCE_URI = "https://graph.windows.net";
 
     @ConfigurationProperty(order = 1, displayMessageKey = "clientId.display",
             helpMessageKey = "clientId.help", required = true)
@@ -94,7 +95,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         return resourceURI;
     }
 
-    public void setResourceURI(String resourceURI) {
+    public void setResourceURI(final String resourceURI) {
         this.resourceURI = resourceURI;
     }
 
@@ -164,7 +165,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         return userAttributesToGet;
     }
 
-    public void setUserAttributesToGet(String... userAttributesToGet) {
+    public void setUserAttributesToGet(final String... userAttributesToGet) {
         this.userAttributesToGet = userAttributesToGet.clone();
     }
 
@@ -174,7 +175,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         return groupAttributesToGet;
     }
 
-    public void setGroupAttributesToGet(String... groupAttributesToGet) {
+    public void setGroupAttributesToGet(final String... groupAttributesToGet) {
         this.groupAttributesToGet = groupAttributesToGet.clone();
     }
 
@@ -184,7 +185,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         return restoreItems;
     }
 
-    public void setRestoreItems(boolean restoreItems) {
+    public void setRestoreItems(final boolean restoreItems) {
         this.restoreItems = restoreItems;
     }
 
@@ -210,5 +211,4 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     @Override
     public void release() {
     }
-
 }

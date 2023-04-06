@@ -30,8 +30,8 @@ public enum AzureFilterOp {
     LESS_OR_EQUAL("le");
 
     private String stringValue;
-    
-    private AzureFilterOp(final String stringValue) {
+
+    AzureFilterOp(final String stringValue) {
         this.stringValue = stringValue;
     }
 
@@ -39,6 +39,7 @@ public enum AzureFilterOp {
         return stringValue;
     }
 
+    @Override
     public String toString() {
         return getStringValue();
     }

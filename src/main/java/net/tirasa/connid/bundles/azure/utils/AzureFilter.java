@@ -15,8 +15,8 @@
  */
 package net.tirasa.connid.bundles.azure.utils;
 
-import org.identityconnectors.framework.common.objects.Attribute;
 import java.util.List;
+import org.identityconnectors.framework.common.objects.Attribute;
 
 public class AzureFilter {
 
@@ -31,10 +31,10 @@ public class AzureFilter {
     private final List<AzureFilter> filters;
 
     public AzureFilter(final AzureFilterOp filterOp,
-                      final Attribute attribute,
-                      final String value,
-                      final boolean quote,
-                      final List<AzureFilter> filters) {
+            final Attribute attribute,
+            final String value,
+            final boolean quote,
+            final List<AzureFilter> filters) {
         this.filterOp = filterOp;
         this.attribute = attribute;
         this.value = value;
@@ -110,6 +110,8 @@ public class AzureFilter {
                 builder.append(' ');
                 builder.append(filterOp);
                 break;
+
+            default:
         }
     }
 }

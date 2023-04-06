@@ -19,7 +19,7 @@ import com.microsoft.graph.models.PasswordProfile;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.exceptions.ConnectorException;
 
-public class AzureUtils {
+public final class AzureUtils {
 
     private static final Log LOG = Log.getLog(AzureUtils.class);
 
@@ -49,7 +49,7 @@ public class AzureUtils {
             case EQUALS:
                 return filters.getAttribute().getName() + " eq '" + filters.getValue() + "'";
             case STARTS_WITH:
-                return "startswith(" + filters.getAttribute().getName() + ",'"  + filters.getValue() + "')";
+                return "startswith(" + filters.getAttribute().getName() + ",'" + filters.getValue() + "')";
             case ENDS_WITH:
                 return "endswith(" + filters.getAttribute().getName() + ",'" + filters.getValue() + "')";
             case AND:
@@ -59,5 +59,9 @@ public class AzureUtils {
             default:
                 throw new ConnectorException("Invalid search filter");
         }
+    }
+
+    private AzureUtils() {
+        // private constructor for static utility class
     }
 }

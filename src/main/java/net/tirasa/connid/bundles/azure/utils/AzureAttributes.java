@@ -84,7 +84,7 @@ public final class AzureAttributes {
             add(USER_ACCOUNT_ENABLED);
             add(USER_DISPLAY_NAME);
             // required only if you using a federated domain for the user's userPrincipalName (UPN) property.
-//            add("immutableId");
+            // add("immutableId");
             add(USER_MAIL_NICKNAME);
             add(USER_PASSWORD_PROFILE);
             add(USER_PRINCIPAL_NAME);
@@ -92,7 +92,6 @@ public final class AzureAttributes {
     };
 
     public static Schema buildSchema() {
-
         SchemaBuilder builder = new SchemaBuilder(AzureConnector.class);
 
         List<Map<String, String>> userMetadata = AzureService.getMetadata(AzureService.USER_METADATA_TYPE_ID_VALUE);
@@ -134,7 +133,7 @@ public final class AzureAttributes {
         return builder.build();
     }
 
-    public static Class<?> getCorrectType(String type) {
+    public static Class<?> getCorrectType(final String type) {
         if (StringUtil.isBlank(type)) {
             return String.class;
         }
@@ -152,9 +151,11 @@ public final class AzureAttributes {
         return typeClass;
     }
 
-    public static AttributeBuilder doBuildAttributeFromClassField(final Object value,
+    public static AttributeBuilder doBuildAttributeFromClassField(
+            final Object value,
             final String name,
             final Class<?> clazz) {
+
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         if (value != null) {
             if (clazz == boolean.class || clazz == Boolean.class) {
@@ -178,4 +179,7 @@ public final class AzureAttributes {
         return attributeBuilder;
     }
 
+    private AzureAttributes() {
+        // private constructor for static utility class
+    }
 }

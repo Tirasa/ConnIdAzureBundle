@@ -15,14 +15,6 @@
  */
 package net.tirasa.connid.bundles.azure;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.microsoft.graph.models.AssignedLicense;
 import com.microsoft.graph.models.AssignedPlan;
@@ -37,13 +29,20 @@ import com.microsoft.graph.requests.GroupCollectionPage;
 import com.microsoft.graph.requests.GroupCollectionRequestBuilder;
 import com.microsoft.graph.requests.UserCollectionPage;
 import com.microsoft.graph.requests.UserCollectionRequestBuilder;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureFilter;
 import net.tirasa.connid.bundles.azure.utils.AzureFilterOp;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
 import org.identityconnectors.common.CollectionUtil;
-
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
@@ -80,13 +79,13 @@ import org.identityconnectors.framework.spi.operations.UpdateOp;
 public class AzureConnector implements
         Connector, CreateOp, DeleteOp, SchemaOp, SearchOp<AzureFilter>, TestOp, UpdateOp {
 
+    public static final String SKIP_TOKEN_ID = "$skiptoken=";
+
+    private static final Log LOG = Log.getLog(AzureConnector.class);
+
     private AzureConnectorConfiguration configuration;
 
     private Schema schema;
-
-    public final static String SKIP_TOKEN_ID = "$skiptoken=";
-
-    private static final Log LOG = Log.getLog(AzureConnector.class);
 
     private AzureClient client;
 
@@ -96,7 +95,7 @@ public class AzureConnector implements
     }
 
     @Override
-    public void init(Configuration configuration) {
+    public void init(final Configuration configuration) {
         LOG.ok("Init");
 
         this.configuration = (AzureConnectorConfiguration) configuration;
@@ -156,8 +155,12 @@ public class AzureConnector implements
     }
 
     @Override
-    public void executeQuery(ObjectClass objectClass, AzureFilter query, ResultsHandler handler,
-                             OperationOptions options) {
+    public void executeQuery(
+            final ObjectClass objectClass,
+            final AzureFilter query,
+            final ResultsHandler handler,
+            final OperationOptions options) {
+
         LOG.ok("Connector READ");
 
         Attribute key = null;
@@ -198,8 +201,9 @@ public class AzureConnector implements
 
                             UserCollectionRequestBuilder nextPageRequest =
                                     client.getAuthenticated().getAllUsersNextPage(pagesSize, "").getNextPage();
-                            cookie = nextPageRequest != null && nextPageRequest.buildRequest().get()
-                                    .getNextPage() != null ? getSkipToken(nextPageRequest) : null;
+                            cookie = nextPageRequest != null
+                                    && nextPageRequest.buildRequest().get().getNextPage() != null
+                                    ? getSkipToken(nextPageRequest) : null;
                         }
                     } else {
                         users = client.getAuthenticated().getAllUsers();
@@ -216,8 +220,10 @@ public class AzureConnector implements
                     ((SearchResultsHandler) handler).handleResult(new SearchResult(cookie, remainingResults));
                 }
             } else {
-                if (AzureFilterOp.EQUALS == query.getFilterOp() &&
-                        (Uid.NAME.equals(key.getName()) || AzureAttributes.USER_ID.equals(key.getName()))) {
+                if (AzureFilterOp.EQUALS == query.getFilterOp()
+                        && (Uid.NAME.equals(key.getName())
+                        || AzureAttributes.USER_ID.equals(key.getName()))) {
+
                     User result = null;
                     try {
                         result = client.getAuthenticated().getUser(AttributeUtil.getAsStringValue(key));
@@ -280,8 +286,8 @@ public class AzureConnector implements
                 }
 
             } else {
-                if (AzureFilterOp.EQUALS == query.getFilterOp() &&
-                        (Uid.NAME.equals(key.getName()) || AzureAttributes.GROUP_ID.equals(key.getName()))) {
+                if (AzureFilterOp.EQUALS == query.getFilterOp() && (Uid.NAME.equals(key.getName())
+                        || AzureAttributes.GROUP_ID.equals(key.getName()))) {
                     Group result = null;
                     try {
                         result = client.getAuthenticated().getGroup(AttributeUtil.getAsStringValue(key));
@@ -332,10 +338,14 @@ public class AzureConnector implements
     }
 
     @Override
-    public Uid create(ObjectClass objectClass, Set<Attribute> createAttributes, OperationOptions options) {
+    public Uid create(
+            final ObjectClass objectClass,
+            final Set<Attribute> createAttributes,
+            final OperationOptions options) {
+
         LOG.ok("Connector CREATE");
 
-        if (createAttributes == null || createAttributes.isEmpty()) {
+        if (CollectionUtil.isEmpty(createAttributes)) {
             AzureUtils.handleGeneralError("Set of Attributes value is null or empty");
         }
 
@@ -368,8 +378,7 @@ public class AzureConnector implements
 
                 user.accountEnabled = status;
 
-                createAttributes.forEach(attribute ->
-                        doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
+                createAttributes.forEach(attr -> doUserSetAttribute(attr.getName(), attr.getValue(), user));
 
                 createdUser = client.getAuthenticated().createUser(user);
             } catch (Exception e) {
@@ -425,8 +434,8 @@ public class AzureConnector implements
                 group.displayName = displayName;
                 group.mailNickname = groupName;
 
-                createAttributes.forEach(attribute ->
-                        doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
+                createAttributes.forEach(attribute
+                        -> doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
                 createdGroup = client.getAuthenticated().createGroup(group);
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not create Group : " + groupName, e);
@@ -442,7 +451,7 @@ public class AzureConnector implements
     }
 
     @Override
-    public void delete(ObjectClass objectClass, Uid uid, OperationOptions options) {
+    public void delete(final ObjectClass objectClass, final Uid uid, final OperationOptions options) {
         LOG.ok("Connector DELETE");
 
         if (StringUtil.isBlank(uid.getUidValue())) {
@@ -482,11 +491,15 @@ public class AzureConnector implements
             throw new UnsupportedOperationException("Delete of type"
                     + objectClass.getObjectClassValue() + " is not supported");
         }
-
     }
 
     @Override
-    public Uid update(ObjectClass objectClass, Uid uid, Set<Attribute> replaceAttributes, OperationOptions options) {
+    public Uid update(
+            final ObjectClass objectClass,
+            final Uid uid,
+            final Set<Attribute> replaceAttributes,
+            final OperationOptions options) {
+
         LOG.ok("Connector UPDATE");
 
         if (replaceAttributes == null || replaceAttributes.isEmpty()) {
@@ -516,12 +529,11 @@ public class AzureConnector implements
                 LOG.warn("{0} attribute value not correct, can't handle User status update",
                         OperationalAttributes.ENABLE_NAME);
             } else {
-                user.accountEnabled = Boolean.parseBoolean(status.getValue().get(0).toString());
+                user.accountEnabled = Boolean.valueOf(status.getValue().get(0).toString());
             }
 
             try {
-                replaceAttributes.forEach(attribute ->
-                        doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
+                replaceAttributes.forEach(attr -> doUserSetAttribute(attr.getName(), attr.getValue(), user));
 
                 // password
                 GuardedString password = accessor.getPassword();
@@ -654,7 +666,6 @@ public class AzureConnector implements
             }
 
             return returnUid;
-
         } else if (ObjectClass.GROUP.equals(objectClass)) {
             Uid returnUid = uid;
 
@@ -677,8 +688,7 @@ public class AzureConnector implements
             }
 
             try {
-                replaceAttributes.forEach(attribute ->
-                        doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
+                replaceAttributes.forEach(attr -> doGroupSetAttribute(attr.getName(), attr.getValue(), group));
                 client.getAuthenticated().updateGroup(group);
 
                 returnUid = new Uid(group.id);
@@ -814,12 +824,12 @@ public class AzureConnector implements
                             case "onPremisesDistinguishedName":
                                 attrs.add(AzureAttributes.
                                         doBuildAttributeFromClassField(user.onPremisesDistinguishedName,
-                                        field.getName(), field.getType()).build());
+                                                field.getName(), field.getType()).build());
                                 break;
                             case "onPremisesSecurityIdentifier":
                                 attrs.add(AzureAttributes.
                                         doBuildAttributeFromClassField(user.onPremisesSecurityIdentifier,
-                                        field.getName(), field.getType()).build());
+                                                field.getName(), field.getType()).build());
                                 break;
                             case "showInAddressList":
                                 attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.showInAddressList,
@@ -849,6 +859,7 @@ public class AzureConnector implements
                                 attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.assignedPlans,
                                         field.getName(), field.getType()).build());
                                 break;
+                            default:
                         }
                     }
                 }
@@ -948,6 +959,7 @@ public class AzureConnector implements
                         attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.visibility,
                                 field.getName(), field.getType()).build());
                         break;
+                    default:
                 }
             }
             for (Attribute toAttribute : attrs) {
@@ -1015,6 +1027,7 @@ public class AzureConnector implements
                         attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.oDataType,
                                 field.getName(), field.getType()).build());
                         break;
+                    default:
                 }
             }
             for (Attribute toAttribute : attrs) {
@@ -1037,20 +1050,20 @@ public class AzureConnector implements
         return builder.build();
     }
 
-    private String getSkipToken(UserCollectionRequestBuilder request) {
+    private String getSkipToken(final UserCollectionRequestBuilder request) {
         String token = request.getRequestUrl().
                 substring(request.getRequestUrl().indexOf(SKIP_TOKEN_ID) + SKIP_TOKEN_ID.length());
         return token.substring(0, token.indexOf("&"));
     }
 
-    private String getGroupSkipToken(GroupCollectionRequestBuilder request) {
+    private String getGroupSkipToken(final GroupCollectionRequestBuilder request) {
         String token = request.getRequestUrl().
                 substring(request.getRequestUrl().indexOf(SKIP_TOKEN_ID) + SKIP_TOKEN_ID.length());
         return token.substring(0, token.indexOf("&"));
     }
 
     @SuppressWarnings("unchecked")
-    private void doUserSetAttribute(final String name, final List<Object> values, User user) {
+    private void doUserSetAttribute(final String name, final List<Object> values, final User user) {
         Object value = values.isEmpty() ? null : values.get(0);
         switch (name) {
             case "displayName":
@@ -1149,11 +1162,12 @@ public class AzureConnector implements
             case "assignedPlans":
                 user.assignedPlans = new ArrayList<>((List<AssignedPlan>) (List<?>) values);
                 break;
+            default:
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void doGroupSetAttribute(final String name, final List<Object> values, Group group) {
+    private void doGroupSetAttribute(final String name, final List<Object> values, final Group group) {
         Object value = values.isEmpty() ? null : values.get(0);
         switch (name) {
             case "id":
@@ -1195,7 +1209,7 @@ public class AzureConnector implements
             case "visibility":
                 group.visibility = (String) value;
                 break;
+            default:
         }
     }
-
 }

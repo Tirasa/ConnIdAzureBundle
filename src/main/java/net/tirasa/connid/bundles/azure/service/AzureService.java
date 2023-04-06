@@ -17,6 +17,11 @@ package net.tirasa.connid.bundles.azure.service;
 
 import com.azure.identity.ClientSecretCredential;
 import com.azure.identity.ClientSecretCredentialBuilder;
+import com.microsoft.aad.msal4j.IAuthenticationResult;
+import com.microsoft.aad.msal4j.PublicClientApplication;
+import com.microsoft.aad.msal4j.UserNamePasswordParameters;
+import com.microsoft.graph.authentication.TokenCredentialAuthProvider;
+import com.microsoft.graph.requests.GraphServiceClient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -29,11 +34,6 @@ import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import com.microsoft.aad.msal4j.IAuthenticationResult;
-import com.microsoft.aad.msal4j.PublicClientApplication;
-import com.microsoft.aad.msal4j.UserNamePasswordParameters;
-import com.microsoft.graph.authentication.TokenCredentialAuthProvider;
-import com.microsoft.graph.requests.GraphServiceClient;
 import net.tirasa.connid.bundles.azure.AzureConnectorConfiguration;
 import net.tirasa.connid.bundles.azure.utils.AzureUtils;
 import okhttp3.OkHttpClient;
@@ -51,13 +51,13 @@ public class AzureService {
 
     private static final Log LOG = Log.getLog(AzureService.class);
 
-    public final static String METADATA_NAME_ID = "Name";
+    public static final String METADATA_NAME_ID = "Name";
 
-    public final static String METADATA_TYPE_ID = "Type";
+    public static final String METADATA_TYPE_ID = "Type";
 
-    public final static String METADATA_NULLABLE_ID = "Nullable";
+    public static final String METADATA_NULLABLE_ID = "Nullable";
 
-    public final static String METADATA_COLLECTION_VALUE = "Collection";
+    public static final String METADATA_COLLECTION_VALUE = "Collection";
 
     public static final String USER_METADATA_TYPE_ID_VALUE = "User";
 
@@ -113,7 +113,7 @@ public class AzureService {
         }
     }
 
-    public GraphServiceClient getGraphServiceClient() {
+    public GraphServiceClient<?> getGraphServiceClient() {
         checkAuth();
 
         final ClientSecretCredential clientSecretCredential = new ClientSecretCredentialBuilder()
@@ -136,7 +136,8 @@ public class AzureService {
         List<Map<String, String>> result = new ArrayList<>();
 
         // e.g. 
-        // https://graph.windows.net/[DOMAIN_NAME].onmicrosoft.com/$metadata#directoryObjects/Microsoft.DirectoryServices.User
+        // https://graph.windows.net/[DOMAIN_NAME].onmicrosoft.com/$metadata#directoryObjects/
+        // Microsoft.DirectoryServices.User
         try {
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()

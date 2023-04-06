@@ -23,6 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.microsoft.graph.http.GraphServiceException;
+import com.microsoft.graph.models.AssignedLicense;
+import com.microsoft.graph.models.DirectoryObject;
+import com.microsoft.graph.models.Group;
+import com.microsoft.graph.models.User;
+import com.microsoft.graph.models.UserAssignLicenseParameterSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,12 +40,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import com.microsoft.graph.http.GraphServiceException;
-import com.microsoft.graph.models.AssignedLicense;
-import com.microsoft.graph.models.DirectoryObject;
-import com.microsoft.graph.models.Group;
-import com.microsoft.graph.models.User;
-import com.microsoft.graph.models.UserAssignLicenseParameterSet;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureFilter;
@@ -71,13 +71,13 @@ public class AzureConnectorTests {
 
     private static final Log LOG = Log.getLog(AzureConnectorTests.class);
 
-    private final static Properties PROPS = new Properties();
+    private static final Properties PROPS = new Properties();
 
     private static AzureConnectorConfiguration CONF;
 
     private static AzureConnector CONN;
 
-    protected static ConnectorFacade connector;
+    protected static ConnectorFacade CONNECTOR;
 
     private static String VALID_LICENSE;
 
@@ -106,7 +106,7 @@ public class AzureConnectorTests {
             CONN.schema();
         }
 
-        connector = newFacade();
+        CONNECTOR = newFacade();
 
         VALID_LICENSE = PROPS.getProperty("availableLicense");
         USAGE_LOCATION = PROPS.getProperty("usageLocation");
@@ -167,7 +167,7 @@ public class AzureConnectorTests {
     public void search() {
         ToListResultsHandler handler = new ToListResultsHandler();
 
-        SearchResult result = connector.
+        SearchResult result = CONNECTOR.
                 search(ObjectClass.ACCOUNT, null, handler, new OperationOptionsBuilder().build());
         assertNotNull(result);
         assertNull(result.getPagedResultsCookie());
@@ -175,7 +175,7 @@ public class AzureConnectorTests {
 
         assertFalse(handler.getObjects().isEmpty());
 
-        result = connector.
+        result = CONNECTOR.
                 search(ObjectClass.ACCOUNT, null, handler, new OperationOptionsBuilder().setPageSize(1).build());
 
         assertNotNull(result);
@@ -537,7 +537,7 @@ public class AzureConnectorTests {
         oob.setPageSize(2);
         oob.setSortKeys(new SortKey("mailNickname", false));
 
-        connector.search(ObjectClass.ACCOUNT, null, handler, oob.build());
+        CONNECTOR.search(ObjectClass.ACCOUNT, null, handler, oob.build());
 
         assertEquals(2, results.size());
 
@@ -546,7 +546,7 @@ public class AzureConnectorTests {
         String cookie = "";
         do {
             oob.setPagedResultsCookie(cookie);
-            final SearchResult searchResult = connector.search(ObjectClass.ACCOUNT, null, handler, oob.build());
+            final SearchResult searchResult = CONNECTOR.search(ObjectClass.ACCOUNT, null, handler, oob.build());
             cookie = searchResult.getPagedResultsCookie();
         } while (cookie != null);
 
@@ -569,7 +569,7 @@ public class AzureConnectorTests {
             user.accountEnabled = true;
             user.displayName = "TestUser-" + uid.toString();
             user.mailNickname = "testuser-" + uid.toString();
-            user.userPrincipalName= "testuser" + uid.toString().substring(0,4) + "@" + CONF.getDomain();
+            user.userPrincipalName = "testuser" + uid.toString().substring(0, 4) + "@" + CONF.getDomain();
             user.passwordProfile = AzureUtils.createPassword("Password01");
             user.usageLocation = "NL";
 

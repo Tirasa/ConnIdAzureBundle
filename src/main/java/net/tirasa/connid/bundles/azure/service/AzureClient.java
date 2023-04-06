@@ -15,9 +15,6 @@
  */
 package net.tirasa.connid.bundles.azure.service;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import com.microsoft.graph.http.GraphServiceException;
 import com.microsoft.graph.models.DirectoryObject;
 import com.microsoft.graph.models.DirectoryObjectGetMemberGroupsParameterSet;
@@ -34,6 +31,9 @@ import com.microsoft.graph.requests.GraphServiceClient;
 import com.microsoft.graph.requests.GroupCollectionPage;
 import com.microsoft.graph.requests.SubscribedSkuCollectionPage;
 import com.microsoft.graph.requests.UserCollectionPage;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import net.tirasa.connid.bundles.azure.AzureConnectorConfiguration;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureFilter;
@@ -148,7 +148,7 @@ public class AzureClient extends AzureService {
         LOG.ok("Get all members of group {0}", groupId);
         GraphServiceClient graphClient = getGraphServiceClient();
         DirectoryObjectCollectionWithReferencesPage group = graphClient.groups(groupId).members().buildRequest().get();
-        
+
         List<User> users = new ArrayList<>();
         if (group != null) {
             group.getCurrentPage().stream().
@@ -450,7 +450,7 @@ public class AzureClient extends AzureService {
         GraphServiceClient graphClient = getGraphServiceClient();
 
         List<QueryOption> queryOptions = new ArrayList<>();
-        queryOptions.add(new QueryOption("$filter","id eq '" + memberId + "'"));
+        queryOptions.add(new QueryOption("$filter", "id eq '" + memberId + "'"));
         try {
             DirectoryObjectCollectionWithReferencesPage result =
                     graphClient.groups(groupId).members().buildRequest(queryOptions).get();
