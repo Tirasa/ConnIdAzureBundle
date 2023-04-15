@@ -217,7 +217,7 @@
       <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
-        <version>0.13</version>
+        <version>0.15</version>
         <configuration>
           <excludes>
             <exclude>**/nbactions.xml</exclude>
@@ -269,7 +269,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.2.0</version>
         <executions>
           <execution>
             <id>copy-artifact-legal-files</id>
