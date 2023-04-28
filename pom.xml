@@ -80,7 +80,7 @@
     
     <microsoft.graph.version>5.51.0</microsoft.graph.version>
     <azure.identity.version>1.8.1</azure.identity.version>
-    <azure.msal4j.version>1.13.7</azure.msal4j.version>
+    <azure.msal4j.version>1.13.8</azure.msal4j.version>
      
     <java.version>1.8</java.version>
         
