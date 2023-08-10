@@ -61,7 +61,7 @@ public final class AzureAttributes {
     public static final String GROUP_ALLOW_EXTERNAL_SENDERS = "allowExternalSenders";
     
     public static final String GROUP_AUTO_SUBSCRIBE_NEW_MEMBERS = "autoSubscribeNewMembers";
-    
+
     public static final String GROUP_PREFERRED_DATA_LOCATION = "preferredDataLocation";
 
     public static final String AZURE_LICENSE_NAME = "azureLicense";
