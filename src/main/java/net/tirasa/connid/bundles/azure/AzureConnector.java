@@ -964,6 +964,26 @@ public class AzureConnector implements
                         attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.visibility,
                                 field.getName(), field.getType()).build());
                         break;
+                    case AzureAttributes.GROUP_MAIL_NICKNAME:
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.mailNickname, field.getName(),
+                                field.getType()).build());
+                        break;
+                    case AzureAttributes.GROUP_DISPLAY_NAME:
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.displayName, field.getName(),
+                                field.getType()).build());
+                        break;
+                    case AzureAttributes.GROUP_ALLOW_EXTERNAL_SENDERS:
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.allowExternalSenders,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case AzureAttributes.GROUP_AUTO_SUBSCRIBE_NEW_MEMBERS:
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.autoSubscribeNewMembers,
+                                field.getName(), field.getType()).build());
+                        break;
+                    case AzureAttributes.GROUP_PREFERRED_DATA_LOCATION:
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.preferredDataLocation,
+                                field.getName(), field.getType()).build());
+                        break;
                     default:
                 }
             }
@@ -1213,6 +1233,21 @@ public class AzureConnector implements
                 break;
             case "visibility":
                 group.visibility = (String) value;
+                break;
+            case AzureAttributes.GROUP_MAIL_NICKNAME:
+                group.mailNickname = (String) value;
+                break;
+            case AzureAttributes.GROUP_DISPLAY_NAME:
+                group.displayName = (String) value;
+                break;
+            case AzureAttributes.GROUP_ALLOW_EXTERNAL_SENDERS:
+                group.allowExternalSenders = (Boolean) value;
+                break;
+            case AzureAttributes.GROUP_AUTO_SUBSCRIBE_NEW_MEMBERS:
+                group.autoSubscribeNewMembers = (Boolean) value;
+                break;
+            case AzureAttributes.GROUP_PREFERRED_DATA_LOCATION:
+                group.preferredDataLocation = (String) value;
                 break;
             default:
         }
