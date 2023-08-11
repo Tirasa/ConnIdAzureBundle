@@ -270,7 +270,7 @@ public class AzureConnector implements
                                     client.getAuthenticated().getAllGroupsNextPage(pagesSize, "").getNextPage();
                             cookie = nextPageRequest != null && nextPageRequest.buildRequest().get()
                                     .getNextPage() != null
-                                    ? getGroupSkipToken(nextPageRequest) : null;
+                                            ? getGroupSkipToken(nextPageRequest) : null;
                         }
                     } else {
                         groups = client.getAuthenticated().getAllGroups();
@@ -380,8 +380,9 @@ public class AzureConnector implements
 
                 user.accountEnabled = status;
 
-                createAttributes.stream().filter(attribute -> attribute.getValue() != null).forEach(attribute ->
-                        doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
+                createAttributes.stream().
+                        filter(attribute -> attribute.getValue() != null).
+                        forEach(attribute -> doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
 
                 createdUser = client.getAuthenticated().createUser(user);
             } catch (Exception e) {
@@ -437,8 +438,8 @@ public class AzureConnector implements
                 group.displayName = displayName;
                 group.mailNickname = groupName;
 
-                createAttributes.stream().filter(attribute -> attribute.getValue() != null).forEach(attribute ->
-                        doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
+                createAttributes.stream().filter(attribute -> attribute.getValue() != null).
+                        forEach(attribute -> doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
                 createdGroup = client.getAuthenticated().createGroup(group);
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not create Group : " + groupName, e);
@@ -536,8 +537,8 @@ public class AzureConnector implements
             }
 
             try {
-                replaceAttributes.stream().filter(attribute -> attribute.getValue() != null).forEach(attribute ->
-                        doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
+                replaceAttributes.stream().filter(attribute -> attribute.getValue() != null).
+                        forEach(attribute -> doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
 
                 // password
                 GuardedString password = accessor.getPassword();
@@ -692,8 +693,8 @@ public class AzureConnector implements
             }
 
             try {
-                replaceAttributes.stream().filter(attribute -> attribute.getValue() != null).forEach(attribute ->
-                        doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
+                replaceAttributes.stream().filter(attribute -> attribute.getValue() != null).
+                        forEach(attribute -> doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
                 client.getAuthenticated().updateGroup(group);
 
                 returnUid = new Uid(group.id);
@@ -965,22 +966,22 @@ public class AzureConnector implements
                                 field.getName(), field.getType()).build());
                         break;
                     case AzureAttributes.GROUP_MAIL_NICKNAME:
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.mailNickname, field.getName(),
-                                field.getType()).build());
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.mailNickname,
+                                field.getName(), field.getType()).build());
                         break;
                     case AzureAttributes.GROUP_DISPLAY_NAME:
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.displayName, field.getName(),
-                                field.getType()).build());
+                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.displayName,
+                                field.getName(), field.getType()).build());
                         break;
-                    case AzureAttributes.GROUP_ALLOW_EXTERNAL_SENDERS:
+                    case "allowExternalSenders":
                         attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.allowExternalSenders,
                                 field.getName(), field.getType()).build());
                         break;
-                    case AzureAttributes.GROUP_AUTO_SUBSCRIBE_NEW_MEMBERS:
+                    case "autoSubscribeNewMembers":
                         attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.autoSubscribeNewMembers,
                                 field.getName(), field.getType()).build());
                         break;
-                    case AzureAttributes.GROUP_PREFERRED_DATA_LOCATION:
+                    case "preferredDataLocation":
                         attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.preferredDataLocation,
                                 field.getName(), field.getType()).build());
                         break;
@@ -1240,13 +1241,13 @@ public class AzureConnector implements
             case AzureAttributes.GROUP_DISPLAY_NAME:
                 group.displayName = (String) value;
                 break;
-            case AzureAttributes.GROUP_ALLOW_EXTERNAL_SENDERS:
+            case "allowExternalSenders":
                 group.allowExternalSenders = (Boolean) value;
                 break;
-            case AzureAttributes.GROUP_AUTO_SUBSCRIBE_NEW_MEMBERS:
+            case "autoSubscribeNewMembers":
                 group.autoSubscribeNewMembers = (Boolean) value;
                 break;
-            case AzureAttributes.GROUP_PREFERRED_DATA_LOCATION:
+            case "preferredDataLocation":
                 group.preferredDataLocation = (String) value;
                 break;
             default:
