@@ -16,6 +16,7 @@
 package net.tirasa.connid.bundles.azure;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.microsoft.graph.http.BaseCollectionRequestBuilder;
 import com.microsoft.graph.models.AssignedLicense;
 import com.microsoft.graph.models.AssignedPlan;
 import com.microsoft.graph.models.DirectoryObject;
@@ -126,8 +127,7 @@ public class AzureConnector implements
             }
 
         } else {
-            LOG.error("Error with establishing connection while testing. "
-                    + "No instance of the configuration class");
+            LOG.error("Error with establishing connection while testing. " + "No instance of the configuration class");
         }
     }
 
@@ -201,9 +201,7 @@ public class AzureConnector implements
 
                             UserCollectionRequestBuilder nextPageRequest =
                                     client.getAuthenticated().getAllUsersNextPage(pagesSize, "").getNextPage();
-                            cookie = nextPageRequest != null
-                                    && nextPageRequest.buildRequest().get().getNextPage() != null
-                                    ? getSkipToken(nextPageRequest) : null;
+                            cookie = nextPageRequest != null ? getSkipToken(nextPageRequest) : null;
                         }
                     } else {
                         users = client.getAuthenticated().getAllUsers();
@@ -261,16 +259,13 @@ public class AzureConnector implements
                             GroupCollectionPage request =
                                     client.getAuthenticated().getAllGroupsNextPage(pagesSize, cookie);
                             groups = request.getCurrentPage();
-                            cookie = request != null && request.getNextPage() != null
-                                    ? getGroupSkipToken(request.getNextPage()) : null;
+                            cookie = request != null ? getSkipToken(request.getNextPage()) : null;
                         } else {
                             groups = client.getAuthenticated().getAllGroups(pagesSize);
 
                             GroupCollectionRequestBuilder nextPageRequest =
                                     client.getAuthenticated().getAllGroupsNextPage(pagesSize, "").getNextPage();
-                            cookie = nextPageRequest != null && nextPageRequest.buildRequest().get()
-                                    .getNextPage() != null
-                                            ? getGroupSkipToken(nextPageRequest) : null;
+                            cookie = nextPageRequest != null ? getSkipToken(nextPageRequest) : null;
                         }
                     } else {
                         groups = client.getAuthenticated().getAllGroups();
@@ -699,8 +694,7 @@ public class AzureConnector implements
 
                 returnUid = new Uid(group.id);
             } catch (Exception e) {
-                AzureUtils.wrapGeneralError(
-                        "Could not update Group " + uid.getUidValue() + " from attributes ", e);
+                AzureUtils.wrapGeneralError("Could not update Group " + uid.getUidValue() + " from attributes ", e);
             }
 
             return returnUid;
@@ -1076,16 +1070,14 @@ public class AzureConnector implements
         return builder.build();
     }
 
-    private String getSkipToken(final UserCollectionRequestBuilder request) {
-        String token = request.getRequestUrl().
-                substring(request.getRequestUrl().indexOf(SKIP_TOKEN_ID) + SKIP_TOKEN_ID.length());
-        return token.substring(0, token.indexOf("&"));
-    }
-
-    private String getGroupSkipToken(final GroupCollectionRequestBuilder request) {
-        String token = request.getRequestUrl().
-                substring(request.getRequestUrl().indexOf(SKIP_TOKEN_ID) + SKIP_TOKEN_ID.length());
-        return token.substring(0, token.indexOf("&"));
+    private String getSkipToken(final BaseCollectionRequestBuilder request) {
+        String token = null;
+        // set token only if the request is not null (not in the last page)
+        if (request != null) {
+            token = request.getRequestUrl()
+                    .substring(request.getRequestUrl().indexOf(SKIP_TOKEN_ID) + SKIP_TOKEN_ID.length());
+        }
+        return StringUtil.isNotBlank(token) ? token.substring(0, token.indexOf("&")) : null;
     }
 
     @SuppressWarnings("unchecked")
