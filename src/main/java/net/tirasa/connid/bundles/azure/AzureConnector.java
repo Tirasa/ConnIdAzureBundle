@@ -38,6 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureFilter;
@@ -848,15 +849,36 @@ public class AzureConnector implements
                                         field.getName(), field.getType()).build());
                                 break;
                             case "provisionedPlans":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.provisionedPlans,
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                        user.provisionedPlans == null
+                                                ? null
+                                                : user.provisionedPlans.stream()
+                                                .map(provisionedPlan -> provisionedPlan.service)
+                                                .collect(Collectors.toList()),
                                         field.getName(), field.getType()).build());
                                 break;
                             case "assignedLicenses":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.assignedLicenses,
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                        user.assignedLicenses == null
+                                                ? null
+                                                : user.assignedLicenses.stream()
+                                                .map(assignedLicense ->
+                                                        assignedLicense.skuId == null
+                                                                ? ""
+                                                                : assignedLicense.skuId.toString())
+                                                .collect(Collectors.toList()),
                                         field.getName(), field.getType()).build());
                                 break;
                             case "assignedPlans":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.assignedPlans,
+                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                        user.assignedPlans == null
+                                                ? null
+                                                : user.assignedPlans.stream()
+                                                .map(assignedPlan ->
+                                                        assignedPlan.servicePlanId == null
+                                                                ? ""
+                                                                : assignedPlan.servicePlanId.toString())
+                                                .collect(Collectors.toList()),
                                         field.getName(), field.getType()).build());
                                 break;
                             default:

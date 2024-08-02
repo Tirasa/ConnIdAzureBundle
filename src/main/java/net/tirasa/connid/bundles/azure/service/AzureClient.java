@@ -62,6 +62,7 @@ public class AzureClient extends AzureService {
         LOG.ok("Get all users");
         GraphServiceClient graphClient = getGraphServiceClient();
         UserCollectionPage userCollectionPage = graphClient.users().buildRequest().
+                select(String.join(",", config.getUserAttributesToGet())).
                 orderBy(AzureAttributes.USER_DISPLAY_NAME).get();
         List<User> users = new ArrayList<>();
         if (userCollectionPage != null) {
@@ -79,6 +80,7 @@ public class AzureClient extends AzureService {
         LOG.ok("Get all users with page size {0}", pageSize);
         GraphServiceClient graphClient = getGraphServiceClient();
         UserCollectionPage userCollectionPage = graphClient.users().buildRequest().
+                select(String.join(",", config.getUserAttributesToGet())).
                 top(pageSize).orderBy(AzureAttributes.USER_DISPLAY_NAME).get();
         List<User> users = new ArrayList<>();
         if (userCollectionPage != null) {
@@ -97,6 +99,7 @@ public class AzureClient extends AzureService {
         LOG.ok("Get all users next page with page size {0}", pageSize);
         GraphServiceClient graphClient = getGraphServiceClient();
         return graphClient.users().buildRequest().
+                select(String.join(",", config.getUserAttributesToGet())).
                 top(pageSize).skipToken(skipToken).orderBy(AzureAttributes.USER_DISPLAY_NAME).get();
     }
 
