@@ -849,37 +849,34 @@ public class AzureConnector implements
                                         field.getName(), field.getType()).build());
                                 break;
                             case "provisionedPlans":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(
-                                        user.provisionedPlans == null
-                                                ? null
-                                                : user.provisionedPlans.stream()
-                                                .map(provisionedPlan -> provisionedPlan.service)
-                                                .collect(Collectors.toList()),
-                                        field.getName(), field.getType()).build());
+                                List<String> provisionedPlans = user.provisionedPlans == null
+                                        ? null
+                                        : user.provisionedPlans.stream()
+                                        .map(provisionedPlan -> provisionedPlan.service)
+                                        .collect(Collectors.toList());
+                                attrs.add(new AttributeBuilder().build(field.getName(), provisionedPlans));
                                 break;
                             case "assignedLicenses":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(
-                                        user.assignedLicenses == null
-                                                ? null
-                                                : user.assignedLicenses.stream()
-                                                .map(assignedLicense ->
-                                                        assignedLicense.skuId == null
-                                                                ? ""
-                                                                : assignedLicense.skuId.toString())
-                                                .collect(Collectors.toList()),
-                                        field.getName(), field.getType()).build());
+                                List<String> assignedLicenses = user.assignedLicenses == null
+                                        ? null
+                                        : user.assignedLicenses.stream()
+                                        .map(assignedLicense ->
+                                                assignedLicense.skuId == null
+                                                        ? ""
+                                                        : assignedLicense.skuId.toString())
+                                        .collect(Collectors.toList());
+                                attrs.add(new AttributeBuilder().build(field.getName(), assignedLicenses));
                                 break;
                             case "assignedPlans":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(
-                                        user.assignedPlans == null
-                                                ? null
-                                                : user.assignedPlans.stream()
-                                                .map(assignedPlan ->
-                                                        assignedPlan.servicePlanId == null
-                                                                ? ""
-                                                                : assignedPlan.servicePlanId.toString())
-                                                .collect(Collectors.toList()),
-                                        field.getName(), field.getType()).build());
+                                List<String> assignedPlans = user.assignedPlans == null
+                                        ? null
+                                        : user.assignedPlans.stream()
+                                        .map(assignedPlan ->
+                                                assignedPlan.servicePlanId == null
+                                                        ? ""
+                                                        : assignedPlan.servicePlanId.toString())
+                                        .collect(Collectors.toList());
+                                attrs.add(new AttributeBuilder().build(field.getName(), assignedPlans));
                                 break;
                             default:
                         }
