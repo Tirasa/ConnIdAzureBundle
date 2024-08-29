@@ -267,7 +267,7 @@ public class AzureClient extends AzureService {
         return groups;
     }
 
-    /**
+   /**
     *
     * @param groupId
     * @return List of Groups for specified Group
