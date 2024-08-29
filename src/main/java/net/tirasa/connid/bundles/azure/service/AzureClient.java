@@ -278,8 +278,9 @@ public class AzureClient extends AzureService {
        List<Group> groups = new ArrayList<>();
        try {
            graphClient.groups(groupId).memberOf().buildRequest().get().getCurrentPage().stream().
-                   filter(directoryObject -> directoryObject instanceof Group).
-                   forEach(directoryObject -> groups.add((Group) directoryObject));
+                   filter(Group.class::isInstance).
+                   map(Group.class::cast).
+                   forEach(groups::add);
        } catch (Exception ex) {
            AzureUtils.handleGeneralError("While getting groups for Group " + groupId, ex);
        }
