@@ -268,6 +268,26 @@ public class AzureClient extends AzureService {
     }
 
     /**
+    *
+    * @param groupId
+    * @return List of Groups for specified Group
+    */
+   public List<Group> getAllGroupsForGroup(final String groupId) {
+       LOG.ok("Get all groups group {0} is member", groupId);
+       GraphServiceClient graphClient = getGraphServiceClient();
+       List<Group> groups = new ArrayList<>();
+       try {
+           graphClient.groups(groupId).memberOf().buildRequest().get().getCurrentPage().stream().
+                   filter(directoryObject -> directoryObject instanceof Group).
+                   forEach(directoryObject -> groups.add((Group) directoryObject));
+       } catch (Exception ex) {
+           AzureUtils.handleGeneralError("While getting groups for Group " + groupId, ex);
+       }
+
+       return groups;
+   }
+
+    /**
      *
      * @param groupId
      * @return Group
