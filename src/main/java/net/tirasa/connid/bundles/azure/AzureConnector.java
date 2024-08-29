@@ -1018,6 +1018,13 @@ public class AzureConnector implements
             builder.addAttribute(AttributeBuilder.build(AzureAttributes.GROUP_ID, group.id));
         }
 
+        if (attributesToGet.contains(PredefinedAttributes.GROUPS_NAME)) {
+            List<String> groupNames = client.getAuthenticated().getAllGroupsForGroup(group.id).
+                    stream().map(g -> g.mailNickname).
+                    collect(Collectors.toList());
+            builder.addAttribute(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, groupNames));
+        }
+            
         return builder.build();
     }
 
