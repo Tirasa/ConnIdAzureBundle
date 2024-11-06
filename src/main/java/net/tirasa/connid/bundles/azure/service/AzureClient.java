@@ -15,25 +15,23 @@
  */
 package net.tirasa.connid.bundles.azure.service;
 
-import com.microsoft.graph.http.GraphServiceException;
+import com.microsoft.graph.directoryobjects.item.getmembergroups.GetMemberGroupsPostRequestBody;
+import com.microsoft.graph.directoryobjects.item.getmemberobjects.GetMemberObjectsPostRequestBody;
 import com.microsoft.graph.models.DirectoryObject;
-import com.microsoft.graph.models.DirectoryObjectGetMemberGroupsParameterSet;
-import com.microsoft.graph.models.DirectoryObjectGetMemberObjectsParameterSet;
+import com.microsoft.graph.models.DirectoryObjectCollectionResponse;
 import com.microsoft.graph.models.Group;
+import com.microsoft.graph.models.GroupCollectionResponse;
+import com.microsoft.graph.models.ReferenceCreate;
 import com.microsoft.graph.models.SubscribedSku;
+import com.microsoft.graph.models.SubscribedSkuCollectionResponse;
 import com.microsoft.graph.models.User;
-import com.microsoft.graph.models.UserAssignLicenseParameterSet;
-import com.microsoft.graph.options.HeaderOption;
-import com.microsoft.graph.options.Option;
-import com.microsoft.graph.options.QueryOption;
-import com.microsoft.graph.requests.DirectoryObjectCollectionWithReferencesPage;
-import com.microsoft.graph.requests.GraphServiceClient;
-import com.microsoft.graph.requests.GroupCollectionPage;
-import com.microsoft.graph.requests.SubscribedSkuCollectionPage;
-import com.microsoft.graph.requests.UserCollectionPage;
+import com.microsoft.graph.models.UserCollectionResponse;
+import com.microsoft.graph.users.item.assignlicense.AssignLicensePostRequestBody;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import net.tirasa.connid.bundles.azure.AzureConnectorConfiguration;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureFilter;
@@ -60,15 +58,13 @@ public class AzureClient extends AzureService {
      */
     public List<User> getAllUsers() {
         LOG.ok("Get all users");
-        GraphServiceClient graphClient = getGraphServiceClient();
-        UserCollectionPage userCollectionPage = graphClient.users().buildRequest().
-                select(String.join(",", config.getUserAttributesToGet())).
-                orderBy(AzureAttributes.USER_DISPLAY_NAME).get();
-        List<User> users = new ArrayList<>();
-        if (userCollectionPage != null) {
-            users = userCollectionPage.getCurrentPage();
-        }
-        return users;
+
+        UserCollectionResponse result = getGraphServiceClient().users().get(req -> {
+            req.queryParameters.select = config.getUserAttributesToGet();
+            req.queryParameters.orderby = new String[] { AzureAttributes.USER_DISPLAY_NAME };
+        });
+
+        return Optional.ofNullable(result).map(UserCollectionResponse::getValue).orElse(Collections.emptyList());
     }
 
     /**
@@ -76,31 +72,20 @@ public class AzureClient extends AzureService {
      * @param pageSize
      * @return paged list of Users
      */
-    public List<User> getAllUsers(final int pageSize) {
+    public UserCollectionResponse getAllUsers(final int pageSize) {
         LOG.ok("Get all users with page size {0}", pageSize);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        UserCollectionPage userCollectionPage = graphClient.users().buildRequest().
-                select(String.join(",", config.getUserAttributesToGet())).
-                top(pageSize).orderBy(AzureAttributes.USER_DISPLAY_NAME).get();
-        List<User> users = new ArrayList<>();
-        if (userCollectionPage != null) {
-            users = userCollectionPage.getCurrentPage();
-        }
-        return users;
+
+        return getGraphServiceClient().users().get(req -> {
+            req.queryParameters.select = config.getUserAttributesToGet();
+            req.queryParameters.orderby = new String[] { AzureAttributes.USER_DISPLAY_NAME };
+            req.queryParameters.top = pageSize;
+        });
     }
 
-    /**
-     *
-     * @param pageSize
-     * @param skipToken
-     * @return paged list of Users
-     */
-    public UserCollectionPage getAllUsersNextPage(final int pageSize, final String skipToken) {
-        LOG.ok("Get all users next page with page size {0}", pageSize);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.users().buildRequest().
-                select(String.join(",", config.getUserAttributesToGet())).
-                top(pageSize).skipToken(skipToken).orderBy(AzureAttributes.USER_DISPLAY_NAME).get();
+    public UserCollectionResponse getAllUsersNextPage(final String odataNextLink) {
+        LOG.ok("Get all users next page {0}", odataNextLink);
+
+        return getGraphServiceClient().users().withUrl(odataNextLink).get();
     }
 
     /**
@@ -110,9 +95,10 @@ public class AzureClient extends AzureService {
      */
     public User getUser(final String userId) {
         LOG.ok("Getting user {0}", userId);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.users(userId).buildRequest().
-                select(String.join(",", config.getUserAttributesToGet())).get();
+
+        return getGraphServiceClient().users().byUserId(userId).get(req -> {
+            req.queryParameters.select = config.getUserAttributesToGet();
+        });
     }
 
     /**
@@ -121,25 +107,20 @@ public class AzureClient extends AzureService {
      * @return List of Users with specified filters values
      */
     public List<User> getUsersFilteredBy(final AzureFilter filters) {
-        GraphServiceClient graphClient = getGraphServiceClient();
+        String filter = AzureUtils.getFilter(filters);
+        LOG.ok("Searching users with filter {0}", filter);
 
-        //This request requires the ConsistencyLevel header set to eventual
-        //because the request has both the $orderBy and $filter query parameters
-        LinkedList<Option> requestOptions = new LinkedList<>();
-        requestOptions.add(new HeaderOption("ConsistencyLevel", "eventual"));
+        UserCollectionResponse result = getGraphServiceClient().users().get(req -> {
+            req.queryParameters.filter = filter;
+            req.queryParameters.select = config.getUserAttributesToGet();
+            req.queryParameters.orderby = new String[] { AzureAttributes.USER_DISPLAY_NAME };
 
-        StringBuilder queryFilter = new StringBuilder();
-        queryFilter.append(AzureUtils.getFilter(filters));
-        LOG.ok("Searching users with filter {0}", queryFilter);
-        UserCollectionPage userCollectionPage = graphClient.users().buildRequest(requestOptions).
-                select(String.join(",", config.getUserAttributesToGet())).
-                filter(queryFilter.toString()).get();
+            // This request requires the ConsistencyLevel header set to eventual
+            // because the request has both the $orderBy and $filter query parameters
+            req.headers.add("ConsistencyLevel", "eventual");
+        });
 
-        List<User> users = null;
-        if (userCollectionPage != null) {
-            users = userCollectionPage.getCurrentPage();
-        }
-        return users;
+        return Optional.ofNullable(result).map(UserCollectionResponse::getValue).orElse(Collections.emptyList());
     }
 
     /**
@@ -149,14 +130,15 @@ public class AzureClient extends AzureService {
      */
     public List<User> getAllMembersOfGroup(final String groupId) {
         LOG.ok("Get all members of group {0}", groupId);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        DirectoryObjectCollectionWithReferencesPage group = graphClient.groups(groupId).members().buildRequest().get();
+
+        DirectoryObjectCollectionResponse result = getGraphServiceClient().groups().byGroupId(groupId).members().get();
 
         List<User> users = new ArrayList<>();
-        if (group != null) {
-            group.getCurrentPage().stream().
-                    filter(directoryObject -> directoryObject instanceof User).
-                    forEach(directoryObject -> users.add((User) directoryObject));
+        if (result != null) {
+            result.getValue().stream().
+                    filter(User.class::isInstance).
+                    map(User.class::cast).
+                    forEach(users::add);
         }
         return users;
     }
@@ -168,11 +150,11 @@ public class AzureClient extends AzureService {
      */
     public void addUserToGroup(final String userId, final String groupId) {
         LOG.ok("Adding user {0} to group {1}", userId, groupId);
-        GraphServiceClient graphClient = getGraphServiceClient();
+
         try {
-            graphClient.groups(groupId).members().references()
-                    .buildRequest()
-                    .post(graphClient.users(userId).buildRequest().get());
+            ReferenceCreate referenceCreate = new ReferenceCreate();
+            referenceCreate.setOdataId("https://graph.microsoft.com/v1.0/directoryObjects/" + userId);
+            getGraphServiceClient().groups().byGroupId(groupId).members().ref().post(referenceCreate);
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While adding User to Group", ex);
         }
@@ -185,18 +167,12 @@ public class AzureClient extends AzureService {
      */
     public void deleteUserFromGroup(final String userId, final String groupId) {
         LOG.ok("Deleting user {0} from group {1}", userId, groupId);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        DirectoryObject deletedObject = null;
+
         try {
-            deletedObject = graphClient.groups(groupId).members(userId).reference()
-                    .buildRequest()
-                    .delete();
+            getGraphServiceClient().groups().byGroupId(groupId).
+                    members().byDirectoryObjectId(userId).ref().delete();
         } catch (Exception ex) {
             AzureUtils.handleGeneralError("While deleting User from Group", ex);
-        }
-
-        if (deletedObject == null) {
-            throw new NoSuchEntityException(userId);
         }
     }
 
@@ -206,15 +182,13 @@ public class AzureClient extends AzureService {
      */
     public List<Group> getAllGroups() {
         LOG.ok("Get all groups");
-        GraphServiceClient graphClient = getGraphServiceClient();
-        GroupCollectionPage groupCollectionPage = graphClient.groups()
-                .buildRequest()
-                .get();
-        List<Group> groups = new ArrayList<>();
-        if (groupCollectionPage != null) {
-            groups = groupCollectionPage.getCurrentPage();
-        }
-        return groups;
+
+        GroupCollectionResponse result = getGraphServiceClient().groups().get(req -> {
+            req.queryParameters.select = config.getGroupAttributesToGet();
+            req.queryParameters.orderby = new String[] { AzureAttributes.GROUP_DISPLAY_NAME };
+        });
+
+        return Optional.ofNullable(result).map(GroupCollectionResponse::getValue).orElse(Collections.emptyList());
     }
 
     /**
@@ -222,29 +196,20 @@ public class AzureClient extends AzureService {
      * @param pageSize
      * @return paged list of Groups
      */
-    public List<Group> getAllGroups(final int pageSize) {
+    public GroupCollectionResponse getAllGroups(final int pageSize) {
         LOG.ok("Get all groups with page size {0}", pageSize);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        GroupCollectionPage groupCollectionPage = graphClient.groups().buildRequest().
-                top(pageSize).orderBy(AzureAttributes.GROUP_DISPLAY_NAME).get();
-        List<Group> groups = new ArrayList<>();
-        if (groupCollectionPage != null) {
-            groups = groupCollectionPage.getCurrentPage();
-        }
-        return groups;
+
+        return getGraphServiceClient().groups().get(req -> {
+            req.queryParameters.select = config.getGroupAttributesToGet();
+            req.queryParameters.orderby = new String[] { AzureAttributes.GROUP_DISPLAY_NAME };
+            req.queryParameters.top = pageSize;
+        });
     }
 
-    /**
-     *
-     * @param pageSize
-     * @param skipToken
-     * @return paged list of Groups
-     */
-    public GroupCollectionPage getAllGroupsNextPage(final int pageSize, final String skipToken) {
-        LOG.ok("Get all groups next page with page size {0}", pageSize);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.groups().buildRequest().
-                top(pageSize).skipToken(skipToken).orderBy(AzureAttributes.GROUP_DISPLAY_NAME).get();
+    public GroupCollectionResponse getAllGroupsNextPage(final String odataNextLink) {
+        LOG.ok("Get all groups next page {0}", odataNextLink);
+
+        return getGraphServiceClient().groups().withUrl(odataNextLink).get();
     }
 
     /**
@@ -254,39 +219,38 @@ public class AzureClient extends AzureService {
      */
     public List<Group> getAllGroupsForUser(final String userId) {
         LOG.ok("Get all groups user {0} is member", userId);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        List<Group> groups = new ArrayList<>();
-        try {
-            graphClient.users(userId).memberOf().buildRequest().get().getCurrentPage().stream().
-                    filter(directoryObject -> directoryObject instanceof Group).
-                    forEach(directoryObject -> groups.add((Group) directoryObject));
-        } catch (Exception ex) {
-            AzureUtils.handleGeneralError("While getting groups for User " + userId, ex);
-        }
 
+        DirectoryObjectCollectionResponse result = getGraphServiceClient().users().byUserId(userId).memberOf().get();
+
+        List<Group> groups = new ArrayList<>();
+        if (result != null) {
+            result.getValue().stream().
+                    filter(Group.class::isInstance).
+                    map(Group.class::cast).
+                    forEach(groups::add);
+        }
         return groups;
     }
 
-   /**
-    *
-    * @param groupId
-    * @return List of Groups for specified Group
-    */
-   public List<Group> getAllGroupsForGroup(final String groupId) {
-       LOG.ok("Get all groups group {0} is member", groupId);
-       GraphServiceClient graphClient = getGraphServiceClient();
-       List<Group> groups = new ArrayList<>();
-       try {
-           graphClient.groups(groupId).memberOf().buildRequest().get().getCurrentPage().stream().
-                   filter(Group.class::isInstance).
-                   map(Group.class::cast).
-                   forEach(groups::add);
-       } catch (Exception ex) {
-           AzureUtils.handleGeneralError("While getting groups for Group " + groupId, ex);
-       }
+    /**
+     *
+     * @param groupId
+     * @return List of Groups for specified Group
+     */
+    public List<Group> getAllGroupsForGroup(final String groupId) {
+        LOG.ok("Get all groups group {0} is member", groupId);
 
-       return groups;
-   }
+        DirectoryObjectCollectionResponse result = getGraphServiceClient().groups().byGroupId(groupId).memberOf().get();
+
+        List<Group> groups = new ArrayList<>();
+        if (result != null) {
+            result.getValue().stream().
+                    filter(Group.class::isInstance).
+                    map(Group.class::cast).
+                    forEach(groups::add);
+        }
+        return groups;
+    }
 
     /**
      *
@@ -295,9 +259,10 @@ public class AzureClient extends AzureService {
      */
     public Group getGroup(final String groupId) {
         LOG.ok("Getting group {0}", groupId);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.groups(groupId).buildRequest().
-                select(String.join(",", config.getGroupAttributesToGet())).get();
+
+        return getGraphServiceClient().groups().byGroupId(groupId).get(req -> {
+            req.queryParameters.select = config.getGroupAttributesToGet();
+        });
     }
 
     /**
@@ -306,25 +271,20 @@ public class AzureClient extends AzureService {
      * @return List of Groups with specified filters values
      */
     public List<Group> getGroupsFilteredBy(final AzureFilter filters) {
-        GraphServiceClient graphClient = getGraphServiceClient();
+        String filter = AzureUtils.getFilter(filters);
+        LOG.ok("Searching groups with filter {0}", filter);
 
-        //This request requires the ConsistencyLevel header set to eventual
-        //because the request has both the $orderBy and $filter query parameters
-        LinkedList<Option> requestOptions = new LinkedList<>();
-        requestOptions.add(new HeaderOption("ConsistencyLevel", "eventual"));
+        GroupCollectionResponse result = getGraphServiceClient().groups().get(req -> {
+            req.queryParameters.filter = filter;
+            req.queryParameters.select = config.getGroupAttributesToGet();
+            req.queryParameters.orderby = new String[] { AzureAttributes.GROUP_DISPLAY_NAME };
 
-        StringBuilder queryFilter = new StringBuilder();
-        queryFilter.append(AzureUtils.getFilter(filters));
-        LOG.ok("Searching groups with filter {0}", queryFilter);
-        GroupCollectionPage groupCollectionPage = graphClient.groups().buildRequest(requestOptions).
-                select(String.join(",", config.getGroupAttributesToGet())).
-                filter(queryFilter.toString()).get();
+            // This request requires the ConsistencyLevel header set to eventual
+            // because the request has both the $orderBy and $filter query parameters
+            req.headers.add("ConsistencyLevel", "eventual");
+        });
 
-        List<Group> groups = null;
-        if (groupCollectionPage != null) {
-            groups = groupCollectionPage.getCurrentPage();
-        }
-        return groups;
+        return Optional.ofNullable(result).map(GroupCollectionResponse::getValue).orElse(Collections.emptyList());
     }
 
     /**
@@ -334,8 +294,8 @@ public class AzureClient extends AzureService {
      */
     public DirectoryObject getDeletedDirectoryObject(final String id) {
         LOG.ok("Get deleted directory object {0} if exists", id);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.directory().deletedItems(id).buildRequest().get();
+
+        return getGraphServiceClient().directory().deletedItems().byDirectoryObjectId(id).get();
     }
 
     /**
@@ -344,8 +304,7 @@ public class AzureClient extends AzureService {
      * @return created User
      */
     public User createUser(final User user) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.users().buildRequest().post(user);
+        return getGraphServiceClient().users().post(user);
     }
 
     /**
@@ -354,8 +313,7 @@ public class AzureClient extends AzureService {
      * @return created Group
      */
     public Group createGroup(final Group group) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.groups().buildRequest().post(group);
+        return getGraphServiceClient().groups().post(group);
     }
 
     /**
@@ -364,9 +322,7 @@ public class AzureClient extends AzureService {
      * @return updated User
      */
     public User updateUser(final User user) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        graphClient.users(user.id).buildRequest().patch(user);
-        return getUser(user.id);
+        return getGraphServiceClient().users().byUserId(user.getId()).patch(user);
     }
 
     /**
@@ -375,8 +331,7 @@ public class AzureClient extends AzureService {
      * @return updated Group
      */
     public Group updateGroup(final Group group) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.groups(group.id).buildRequest().patch(group);
+        return getGraphServiceClient().groups().byGroupId(group.getId()).patch(group);
     }
 
     /**
@@ -384,8 +339,7 @@ public class AzureClient extends AzureService {
      * @param userId
      */
     public void deleteUser(final String userId) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        graphClient.users(userId).buildRequest().delete();
+        getGraphServiceClient().users().byUserId(userId).delete();
     }
 
     /**
@@ -393,8 +347,7 @@ public class AzureClient extends AzureService {
      * @param groupId
      */
     public void deleteGroup(final String groupId) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        graphClient.groups(groupId).buildRequest().delete();
+        getGraphServiceClient().groups().byGroupId(groupId).delete();
     }
 
     /**
@@ -403,8 +356,7 @@ public class AzureClient extends AzureService {
      * @return restored DirectoryObject
      */
     public DirectoryObject restoreDirectoryObject(final String id) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        return graphClient.directory().deletedItems(id).restore().buildRequest().post();
+        return getGraphServiceClient().directory().deletedItems().byDirectoryObjectId(id).restore().post();
     }
 
     /**
@@ -414,15 +366,12 @@ public class AzureClient extends AzureService {
      */
     public List<SubscribedSku> getCurrentTenantSubscriptions() {
         LOG.ok("Get all subscriptions");
-        GraphServiceClient graphClient = getGraphServiceClient();
 
-        SubscribedSkuCollectionPage subscribedSkuCollectionPage = graphClient.subscribedSkus().buildRequest().get();
-        List<SubscribedSku> results = null;
-        if (subscribedSkuCollectionPage != null) {
-            results = subscribedSkuCollectionPage.getCurrentPage();
-        }
+        SubscribedSkuCollectionResponse result = getGraphServiceClient().subscribedSkus().get();
 
-        return results;
+        return Optional.ofNullable(result).
+                map(SubscribedSkuCollectionResponse::getValue).
+                orElse(Collections.emptyList());
     }
 
     /**
@@ -433,22 +382,17 @@ public class AzureClient extends AzureService {
      */
     public List<String> getCurrentTenantSkuIds(final boolean onlyEnabled) {
         LOG.ok("Get all enabled subscriptions");
-        List<String> result = new ArrayList<>();
 
-        List<SubscribedSku> subscriptions = getCurrentTenantSubscriptions();
-        try {
-            for (SubscribedSku subscription : subscriptions) {
-                if (onlyEnabled && subscription.capabilityStatus.equalsIgnoreCase("enabled")) {
-                    result.add(subscription.skuId.toString());
-                } else if (!onlyEnabled) {
-                    result.add(subscription.skuId.toString());
-                }
-            }
-        } catch (Exception ex) {
-            AzureUtils.handleGeneralError("While getting current tenant available licenses", ex);
+        SubscribedSkuCollectionResponse result = getGraphServiceClient().subscribedSkus().get();
+
+        if (result == null) {
+            return Collections.emptyList();
         }
 
-        return result;
+        return result.getValue().stream().
+                filter(sku -> !onlyEnabled || sku.getCapabilityStatus().equalsIgnoreCase("enabled")).
+                map(SubscribedSku::toString).
+                collect(Collectors.toList());
     }
 
     /**
@@ -457,10 +401,10 @@ public class AzureClient extends AzureService {
      * @param userId
      * @param assignedLicense
      */
-    public void assignLicense(final String userId, final UserAssignLicenseParameterSet assignedLicense) {
+    public void assignLicense(final String userId, final AssignLicensePostRequestBody assignedLicense) {
         LOG.ok("Assigning licenses to user {0}", userId);
-        GraphServiceClient graphClient = getGraphServiceClient();
-        graphClient.users(userId).assignLicense(assignedLicense).buildRequest().post();
+
+        getGraphServiceClient().users().byUserId(userId).assignLicense().post(assignedLicense);
     }
 
     /**
@@ -470,19 +414,13 @@ public class AzureClient extends AzureService {
      * @param groupId
      * @return whether a specified user, group, contact, or service principal is a member of a specified group
      */
-    public Boolean isMemberOf(final String memberId, final String groupId) {
-        GraphServiceClient graphClient = getGraphServiceClient();
+    public boolean isMemberOf(final String memberId, final String groupId) {
+        DirectoryObjectCollectionResponse result = getGraphServiceClient().groups().byGroupId(groupId).
+                members().get(req -> {
+                    req.queryParameters.filter = "id eq '" + memberId + "'";
+                });
 
-        List<QueryOption> queryOptions = new ArrayList<>();
-        queryOptions.add(new QueryOption("$filter", "id eq '" + memberId + "'"));
-        try {
-            DirectoryObjectCollectionWithReferencesPage result =
-                    graphClient.groups(groupId).members().buildRequest(queryOptions).get();
-
-            return result != null;
-        } catch (GraphServiceException ex) {
-            return false;
-        }
+        return Optional.ofNullable(result).map(r -> !r.getValue().isEmpty()).orElse(false);
     }
 
     /**
@@ -490,16 +428,14 @@ public class AzureClient extends AzureService {
      *
      * @param resourceId
      * @param securityEnabledOnly
-     * @return called on a user, contact, group, or service principal to get the
-     * groups that it is a member of
+     * @return called on a user, contact, group, or service principal to get the groups that it is a member of
      */
     public List<String> getMemberGroups(final String resourceId, final boolean securityEnabledOnly) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        DirectoryObjectGetMemberGroupsParameterSet securityEnabled = new DirectoryObjectGetMemberGroupsParameterSet();
-        securityEnabled.securityEnabledOnly = securityEnabledOnly;
+        GetMemberGroupsPostRequestBody securityEnabled = new GetMemberGroupsPostRequestBody();
+        securityEnabled.setSecurityEnabledOnly(securityEnabledOnly);
 
-        return graphClient.directoryObjects(resourceId).getMemberGroups(securityEnabled).
-                buildRequest().post().getCurrentPage();
+        return getGraphServiceClient().directoryObjects().byDirectoryObjectId(resourceId).
+                getMemberGroups().post(securityEnabled).getValue();
     }
 
     /**
@@ -511,11 +447,10 @@ public class AzureClient extends AzureService {
      * groups and directory roles that it is a member of
      */
     public List<String> getMemberObjects(final String resourceId, final boolean securityEnabledOnly) {
-        GraphServiceClient graphClient = getGraphServiceClient();
-        DirectoryObjectGetMemberObjectsParameterSet securityEnabled = new DirectoryObjectGetMemberObjectsParameterSet();
-        securityEnabled.securityEnabledOnly = securityEnabledOnly;
+        GetMemberObjectsPostRequestBody securityEnabled = new GetMemberObjectsPostRequestBody();
+        securityEnabled.setSecurityEnabledOnly(securityEnabledOnly);
 
-        return graphClient.directoryObjects(resourceId).getMemberObjects(securityEnabled).
-                buildRequest().post().getCurrentPage();
+        return getGraphServiceClient().directoryObjects().byDirectoryObjectId(resourceId).
+                getMemberObjects().post(securityEnabled).getValue();
     }
 }
