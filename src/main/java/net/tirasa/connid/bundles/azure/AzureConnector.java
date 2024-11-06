@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.microsoft.graph.models.AssignedLicense;
 import com.microsoft.graph.models.AssignedPlan;
 import com.microsoft.graph.models.DirectoryObject;
+import com.microsoft.graph.models.DirectoryObjectCollectionResponse;
 import com.microsoft.graph.models.Group;
 import com.microsoft.graph.models.GroupCollectionResponse;
 import com.microsoft.graph.models.ProvisionedPlan;
@@ -609,8 +610,21 @@ public class AzureConnector implements
 
         if (ObjectClass.ACCOUNT.equals(objectClass)) {
             try {
-                for (Group group : client.getAuthenticated().getAllGroupsForUser(uid.getUidValue())) {
-                    client.getAuthenticated().deleteUserFromGroup(uid.getUidValue(), group.getId());
+                DirectoryObjectCollectionResponse groups =
+                        client.getAuthenticated().getAllGroupsForUser(uid.getUidValue());
+
+                while (groups != null) {
+                    groups.getValue().stream().filter(Group.class::isInstance).map(Group.class::cast).
+                            forEach(group -> client.getAuthenticated().
+                            deleteUserFromGroup(uid.getUidValue(), group.getId()));
+
+                    // Get the next page
+                    String odataNextLink = groups.getOdataNextLink();
+                    if (odataNextLink == null || odataNextLink.isEmpty()) {
+                        break;
+                    } else {
+                        groups = client.getAuthenticated().getAllGroupsForUser(uid.getUidValue(), odataNextLink);
+                    }
                 }
             } catch (Exception e) {
                 LOG.error("Could not delete User {0} from Groups", uid.getUidValue());
@@ -695,10 +709,21 @@ public class AzureConnector implements
             // memberships
             Set<String> ownGroups = new HashSet<>();
             try {
-                List<Group> ownGroupsResults =
-                        client.getAuthenticated().getAllGroupsForUser(returnUid.getUidValue());
-                for (Group group : ownGroupsResults) {
-                    ownGroups.add(group.getId());
+                DirectoryObjectCollectionResponse groups =
+                        client.getAuthenticated().getAllGroupsForUser(uid.getUidValue());
+
+                while (groups != null) {
+                    groups.getValue().stream().filter(Group.class::isInstance).map(Group.class::cast).
+                            forEach(group -> client.getAuthenticated().
+                            deleteUserFromGroup(uid.getUidValue(), group.getId()));
+
+                    // Get the next page
+                    String odataNextLink = groups.getOdataNextLink();
+                    if (odataNextLink == null || odataNextLink.isEmpty()) {
+                        break;
+                    } else {
+                        groups = client.getAuthenticated().getAllGroupsForUser(uid.getUidValue(), odataNextLink);
+                    }
                 }
             } catch (Exception ex) {
                 LOG.error(ex, "Could not list groups for User {0}", uid.getUidValue());
@@ -1027,10 +1052,20 @@ public class AzureConnector implements
         }
 
         if (attributesToGet.contains(PredefinedAttributes.GROUPS_NAME)) {
+            DirectoryObjectCollectionResponse groups = client.getAuthenticated().getAllGroupsForUser(user.getId());
+
             List<String> groupNames = new ArrayList<>();
-            List<Group> groups = client.getAuthenticated().getAllGroupsForUser(user.getId());
-            for (Group group : groups) {
-                groupNames.add(group.getMailNickname());
+            while (groups != null) {
+                groups.getValue().stream().filter(Group.class::isInstance).map(Group.class::cast).
+                        forEach(group -> groupNames.add(group.getMailNickname()));
+
+                // Get the next page
+                String odataNextLink = groups.getOdataNextLink();
+                if (odataNextLink == null || odataNextLink.isEmpty()) {
+                    break;
+                } else {
+                    groups = client.getAuthenticated().getAllGroupsForUser(user.getId(), odataNextLink);
+                }
             }
             builder.addAttribute(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, groupNames));
         }

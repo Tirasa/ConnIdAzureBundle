@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import net.tirasa.connid.bundles.azure.service.AzureClient;
 import net.tirasa.connid.bundles.azure.utils.AzureAttributes;
 import net.tirasa.connid.bundles.azure.utils.AzureFilter;
@@ -332,7 +333,8 @@ public class AzureConnectorTests {
             // can't test password update here, Azure API always return '"passwordProfile": null'
 
             // GET USER GROUPS
-            List<Group> groupsForUser = client.getAuthenticated().getAllGroupsForUser(testUserUid);
+            List<Group> groupsForUser = client.getAuthenticated().getAllGroupsForUser(testUserUid).getValue().stream().
+                    filter(Group.class::isInstance).map(Group.class::cast).collect(Collectors.toList());
 
             assertNotNull(groupsForUser);
             assertEquals(1, groupsForUser.size());
@@ -360,7 +362,8 @@ public class AzureConnectorTests {
 
             LOG.info("Updated Group with old name {0} and new name {1}", group.getDisplayName(), groupName);
 
-            List<Group> userGroups = client.getAuthenticated().getAllGroupsForUser(testUserUid);
+            List<Group> userGroups = client.getAuthenticated().getAllGroupsForUser(testUserUid).getValue().stream().
+                    filter(Group.class::isInstance).map(Group.class::cast).collect(Collectors.toList());
             assertNotNull(userGroups);
             assertFalse(userGroups.isEmpty());
 
@@ -683,7 +686,8 @@ public class AzureConnectorTests {
             LOG.info("Members of Group : {0}", groupMembers);
 
             // GET USER GROUPS
-            List<Group> userGroups = client.getAuthenticated().getAllGroupsForUser(testUser);
+            List<Group> userGroups = client.getAuthenticated().getAllGroupsForUser(testUser).getValue().stream().
+                    filter(Group.class::isInstance).map(Group.class::cast).collect(Collectors.toList());
             assertNotNull(userGroups);
             assertFalse(userGroups.isEmpty());
             LOG.info("User groups list : {0}", userGroups);

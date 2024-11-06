@@ -212,24 +212,16 @@ public class AzureClient extends AzureService {
         return getGraphServiceClient().groups().withUrl(odataNextLink).get();
     }
 
-    /**
-     *
-     * @param userId
-     * @return List of Groups for specified User
-     */
-    public List<Group> getAllGroupsForUser(final String userId) {
+    public DirectoryObjectCollectionResponse getAllGroupsForUser(final String userId) {
         LOG.ok("Get all groups user {0} is member", userId);
 
-        DirectoryObjectCollectionResponse result = getGraphServiceClient().users().byUserId(userId).memberOf().get();
+        return getGraphServiceClient().users().byUserId(userId).memberOf().get();
+    }
 
-        List<Group> groups = new ArrayList<>();
-        if (result != null) {
-            result.getValue().stream().
-                    filter(Group.class::isInstance).
-                    map(Group.class::cast).
-                    forEach(groups::add);
-        }
-        return groups;
+    public DirectoryObjectCollectionResponse getAllGroupsForUser(final String userId, final String odataNextLink) {
+        LOG.ok("Get all groups user {0} is member next page {1}", userId, odataNextLink);
+
+        return getGraphServiceClient().users().byUserId("userId").memberOf().withUrl(odataNextLink).get();
     }
 
     /**
