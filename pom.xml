@@ -28,7 +28,7 @@
     
   <groupId>net.tirasa.connid.bundles</groupId>
   <artifactId>net.tirasa.connid.bundles.azure</artifactId>
-  <version>2.0.3-SNAPSHOT</version>     
+  <version>3.0.0-SNAPSHOT</version>     
      
   <name>ConnId Bundles: Azure</name>
   
