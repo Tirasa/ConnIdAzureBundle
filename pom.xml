@@ -28,7 +28,7 @@
     
   <groupId>net.tirasa.connid.bundles</groupId>
   <artifactId>net.tirasa.connid.bundles.azure</artifactId>
-  <version>2.0.3-SNAPSHOT</version>     
+  <version>3.0.0-SNAPSHOT</version>     
      
   <name>ConnId Bundles: Azure</name>
   
@@ -78,7 +78,7 @@
   <properties>
     <connid.version>1.5.2.0</connid.version>
     
-    <microsoft.graph.version>5.51.0</microsoft.graph.version>
+    <microsoft.graph.version>6.19.0</microsoft.graph.version>
     <azure.identity.version>1.14.1</azure.identity.version>
     <azure.msal4j.version>1.17.2</azure.msal4j.version>
      
@@ -98,12 +98,12 @@
       <artifactId>azure-identity</artifactId>
       <version>${azure.identity.version}</version>
     </dependency>
-
     <dependency>
       <groupId>com.microsoft.azure</groupId>
       <artifactId>msal4j</artifactId>
       <version>${azure.msal4j.version}</version>
     </dependency>
+
     <dependency>
       <groupId>net.tirasa.connid</groupId>
       <artifactId>connector-framework</artifactId>
