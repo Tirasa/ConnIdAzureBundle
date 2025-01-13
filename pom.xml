@@ -79,7 +79,7 @@
     <connid.version>1.5.2.0</connid.version>
     
     <microsoft.graph.version>6.25.1</microsoft.graph.version>
-    <azure.identity.version>1.14.2</azure.identity.version>
+    <azure.identity.version>1.15.0</azure.identity.version>
     <azure.msal4j.version>1.18.0</azure.msal4j.version>
      
     <java.version>1.8</java.version>
