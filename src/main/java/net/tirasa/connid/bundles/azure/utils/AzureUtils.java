@@ -47,7 +47,10 @@ public final class AzureUtils {
     public static String getFilter(final AzureFilter filters) {
         switch (filters.getFilterOp()) {
             case EQUALS:
-                return filters.getAttribute().getName() + " eq '" + filters.getValue() + "'";
+                if (filters.getValue() instanseof String) {
+                    return filters.getAttribute().getName() + " eq '" + filters.getValue() + "'";
+                }
+                return filters.getAttribute().getName() + " eq " + filters.getValue();
             case STARTS_WITH:
                 return "startswith(" + filters.getAttribute().getName() + ",'" + filters.getValue() + "')";
             case ENDS_WITH:
