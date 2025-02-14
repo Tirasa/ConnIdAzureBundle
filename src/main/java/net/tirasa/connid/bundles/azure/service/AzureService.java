@@ -20,8 +20,7 @@ import com.azure.identity.ClientSecretCredentialBuilder;
 import com.microsoft.aad.msal4j.IAuthenticationResult;
 import com.microsoft.aad.msal4j.PublicClientApplication;
 import com.microsoft.aad.msal4j.UserNamePasswordParameters;
-import com.microsoft.graph.authentication.TokenCredentialAuthProvider;
-import com.microsoft.graph.requests.GraphServiceClient;
+import com.microsoft.graph.serviceclient.GraphServiceClient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -62,71 +61,6 @@ public class AzureService {
     public static final String USER_METADATA_TYPE_ID_VALUE = "User";
 
     public static final String GROUP_METADATA_TYPE_ID_VALUE = "Group";
-
-    protected final AzureConnectorConfiguration config;
-
-    private IAuthenticationResult authenticationResult;
-
-    public AzureService(final AzureConnectorConfiguration config) {
-        this.config = config;
-    }
-
-    private void doAuth() {
-        LOG.ok("Performing Azure account authentication");
-
-        PublicClientApplication pca;
-        try {
-            pca = PublicClientApplication.builder(config.getClientId())
-                    .authority(config.getAuthority())
-                    .build();
-
-            UserNamePasswordParameters parameters = UserNamePasswordParameters
-                    .builder(Collections.singleton(config.getScopes()), config.getUsername(),
-                            config.getPassword().toCharArray()).build();
-
-            authenticationResult = pca.acquireToken(parameters).join();
-            LOG.ok("==username/password flow succeeded");
-
-        } catch (MalformedURLException ex) {
-            AzureUtils.handleGeneralError("While performing Azure authentication", ex);
-        }
-    }
-
-    protected void checkAuth() {
-        if (!isAuthenticated()) {
-            doAuth();
-        }
-        checkTokenExpiry();
-    }
-
-    private boolean isAuthenticated() {
-        return authenticationResult != null
-                && StringUtil.isNotBlank(authenticationResult.accessToken());
-    }
-
-    private void checkTokenExpiry() {
-        Date expireOnDate = authenticationResult.expiresOnDate();
-        Date currentDate = new Date();
-        if (currentDate.after(expireOnDate)) {
-            LOG.ok("Token expired! Refreshing...");
-            doAuth();
-        }
-    }
-
-    public GraphServiceClient<?> getGraphServiceClient() {
-        checkAuth();
-
-        final ClientSecretCredential clientSecretCredential = new ClientSecretCredentialBuilder()
-                .clientId(config.getClientId())
-                .clientSecret(config.getClientSecret())
-                .tenantId(config.getTenantId())
-                .build();
-
-        final TokenCredentialAuthProvider tokenCredAuthProvider =
-                new TokenCredentialAuthProvider(Collections.singletonList(config.getScopes()), clientSecretCredential);
-
-        return GraphServiceClient.builder().authenticationProvider(tokenCredAuthProvider).buildClient();
-    }
 
     public static List<Map<String, String>> getMetadata(final String type) {
         return getXMLObjectFromAzureAD(type);
@@ -223,4 +157,66 @@ public class AzureService {
         return list;
     }
 
+    protected final AzureConnectorConfiguration config;
+
+    private IAuthenticationResult authenticationResult;
+
+    public AzureService(final AzureConnectorConfiguration config) {
+        this.config = config;
+    }
+
+    private void doAuth() {
+        LOG.ok("Performing Azure account authentication");
+
+        PublicClientApplication pca;
+        try {
+            pca = PublicClientApplication.builder(config.getClientId())
+                    .authority(config.getAuthority())
+                    .build();
+
+            UserNamePasswordParameters parameters = UserNamePasswordParameters.builder(
+                    Collections.singleton(config.getScopes()),
+                    config.getUsername(),
+                    config.getPassword().toCharArray()).
+                    build();
+
+            authenticationResult = pca.acquireToken(parameters).join();
+            LOG.ok("==username/password flow succeeded");
+
+        } catch (MalformedURLException ex) {
+            AzureUtils.handleGeneralError("While performing Azure authentication", ex);
+        }
+    }
+
+    protected void checkAuth() {
+        if (!isAuthenticated()) {
+            doAuth();
+        }
+        checkTokenExpiry();
+    }
+
+    private boolean isAuthenticated() {
+        return authenticationResult != null && StringUtil.isNotBlank(authenticationResult.accessToken());
+    }
+
+    private void checkTokenExpiry() {
+        Date expireOnDate = authenticationResult.expiresOnDate();
+        Date currentDate = new Date();
+        if (currentDate.after(expireOnDate)) {
+            LOG.ok("Token expired! Refreshing...");
+            doAuth();
+        }
+    }
+
+    public GraphServiceClient getGraphServiceClient() {
+        checkAuth();
+
+        ClientSecretCredential clientSecretCredential = new ClientSecretCredentialBuilder()
+                .clientId(config.getClientId())
+                .clientSecret(config.getClientSecret())
+                .tenantId(config.getTenantId())
+                .build();
+
+        return new GraphServiceClient(clientSecretCredential, config.getScopes());
+    }
 }

@@ -25,7 +25,7 @@ public final class AzureUtils {
 
     public static PasswordProfile createPassword(final String password) {
         PasswordProfile passwordProfile = new PasswordProfile();
-        passwordProfile.password = password;
+        passwordProfile.getBackingStore().set("password", password);
         return passwordProfile;
     }
 
