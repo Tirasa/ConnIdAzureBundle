@@ -47,7 +47,7 @@ public final class AzureUtils {
     public static String getFilter(final AzureFilter filters) {
         switch (filters.getFilterOp()) {
             case EQUALS:
-                if (filters.getValue() instanseof String) {
+                if (filters.getValue() instanceof String) {
                     return filters.getAttribute().getName() + " eq '" + filters.getValue() + "'";
                 }
                 return filters.getAttribute().getName() + " eq " + filters.getValue();
