@@ -118,12 +118,12 @@ public class AzureFilterTranslator extends AbstractFilterTranslator<AzureFilter>
         }
     }
 
-    private String getFilterValue(final AttributeFilter filter) {
+    private Object getFilterValue(final AttributeFilter filter) {
         Object attrValue = AttributeUtil.getSingleValue(filter.getAttribute());
         if (attrValue == null) {
             return null;
         }
-        return attrValue.toString();
+        return attrValue;
     }
 
     private void checkIfNot(final boolean not) {

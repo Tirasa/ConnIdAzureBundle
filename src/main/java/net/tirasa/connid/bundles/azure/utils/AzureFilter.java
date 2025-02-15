@@ -24,7 +24,7 @@ public class AzureFilter {
 
     private final Attribute attribute;
 
-    private final String value;
+    private final Object value;
 
     private final boolean quote;
 
@@ -32,7 +32,7 @@ public class AzureFilter {
 
     public AzureFilter(final AzureFilterOp filterOp,
             final Attribute attribute,
-            final String value,
+            final Object value,
             final boolean quote,
             final List<AzureFilter> filters) {
         this.filterOp = filterOp;
@@ -50,7 +50,7 @@ public class AzureFilter {
         return attribute;
     }
 
-    public String getValue() {
+    public Object getValue() {
         return value;
     }
 
