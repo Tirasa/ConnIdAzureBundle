@@ -78,7 +78,7 @@
   <properties>
     <connid.version>1.5.2.0</connid.version>
     
-    <microsoft.graph.version>6.34.0</microsoft.graph.version>
+    <microsoft.graph.version>6.35.0</microsoft.graph.version>
     <azure.identity.version>1.15.4</azure.identity.version>
     <azure.msal4j.version>1.20.0</azure.msal4j.version>
      
