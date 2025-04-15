@@ -63,7 +63,7 @@
   </ciManagement>
   
   <properties>
-    <connid.version>1.5.2.1</connid.version>
+    <connid.version>1.6.0.1</connid.version>
 
     <microsoft.graph.version>6.35.0</microsoft.graph.version>
     <azure.identity.version>1.15.4</azure.identity.version>
