@@ -67,7 +67,7 @@
 
     <microsoft.graph.version>6.51.0</microsoft.graph.version>
     <azure.identity.version>1.17.0</azure.identity.version>
-    <azure.msal4j.version>1.22.0</azure.msal4j.version>
+    <azure.msal4j.version>1.23.0</azure.msal4j.version>
      
     <java.version>1.8</java.version>
         
