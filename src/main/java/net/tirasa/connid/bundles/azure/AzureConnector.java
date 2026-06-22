@@ -28,6 +28,9 @@ import com.microsoft.graph.models.User;
 import com.microsoft.graph.models.UserCollectionResponse;
 import com.microsoft.graph.users.item.assignlicense.AssignLicensePostRequestBody;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -870,170 +873,247 @@ public class AzureConnector implements
             Set<Attribute> attrs = new HashSet<>();
 
             Field[] fields = User.class.getDeclaredFields();
-            for (Field field : fields) {
-                if (field.getAnnotation(JsonIgnore.class) == null) {
-                    field.setAccessible(true);
-                    if (field.getName().equals(AzureAttributes.USER_PASSWORD_PROFILE)
-                            && user.getPasswordProfile() != null && user.getPasswordProfile().getPassword() != null) {
-
-                        attrs.add(AttributeBuilder.build(AzureAttributes.USER_PASSWORD_PROFILE,
-                                new GuardedString(user.getPasswordProfile().getPassword().toCharArray())));
-                    } else if (field.getName().equals(AzureAttributes.USER_ACCOUNT_ENABLED)
-                            && user.getAccountEnabled() != null) {
-                        attrs.add(AttributeBuilder.build(
-                                AzureAttributes.USER_ACCOUNT_ENABLED, user.getAccountEnabled()));
-                    } else {
-                        switch (field.getName()) {
-                            case "displayName":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getDisplayName(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "id":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getId(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "userPrincipalName":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getUserPrincipalName(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "city":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getCity(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "country":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getCountry(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "department":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getDepartment(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "businessPhones":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getBusinessPhones(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "givenName":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getGivenName(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "onPremisesImmutableId":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(
-                                        user.getOnPremisesImmutableId(), field.getName(), field.getType()).build());
-                                break;
-                            case "jobTitle":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getJobTitle(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "mail":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getMail(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "mobilePhone":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getMobilePhone(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "preferredLanguage":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getPreferredLanguage(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "officeLocation":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getOfficeLocation(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "postalCode":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getPostalCode(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "state":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getState(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "streetAddress":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getStreetAddress(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "surname":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getSurname(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "usageLocation":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getUsageLocation(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "companyName":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getCompanyName(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "creationType":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getCreationType(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "employeeId":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getEmployeeId(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "onPremisesDistinguishedName":
-                                attrs.add(AzureAttributes.
-                                        doBuildAttributeFromClassField(user.getOnPremisesDistinguishedName(),
-                                                field.getName(), field.getType()).build());
-                                break;
-                            case "onPremisesSecurityIdentifier":
-                                attrs.add(AzureAttributes.
-                                        doBuildAttributeFromClassField(user.getOnPremisesSecurityIdentifier(),
-                                                field.getName(), field.getType()).build());
-                                break;
-                            case "showInAddressList":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getShowInAddressList(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "proxyAddresses":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getProxyAddresses(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "userType":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getUserType(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "otherMails":
-                                attrs.add(AzureAttributes.doBuildAttributeFromClassField(user.getOtherMails(),
-                                        field.getName(), field.getType()).build());
-                                break;
-                            case "provisionedPlans":
-                                List<String> provisionedPlans = user.getProvisionedPlans() == null
-                                        ? null
-                                        : user.getProvisionedPlans().stream()
-                                                .map(ProvisionedPlan::getService)
-                                                .collect(Collectors.toList());
-                                attrs.add(new AttributeBuilder().build(field.getName(), provisionedPlans));
-                                break;
-                            case "assignedLicenses":
-                                List<String> assignedLicenses = user.getAssignedLicenses() == null
-                                        ? null
-                                        : user.getAssignedLicenses().stream()
-                                                .map(assignedLicense
-                                                        -> assignedLicense.getSkuId() == null
-                                                ? ""
-                                                : assignedLicense.getSkuId().toString())
-                                                .collect(Collectors.toList());
-                                attrs.add(new AttributeBuilder().build(field.getName(), assignedLicenses));
-                                break;
-                            case "assignedPlans":
-                                List<String> assignedPlans = user.getAssignedPlans() == null
-                                        ? null
-                                        : user.getAssignedPlans().stream()
-                                                .map(assignedPlan
-                                                        -> assignedPlan.getServicePlanId() == null
-                                                ? ""
-                                                : assignedPlan.getServicePlanId().toString())
-                                                .collect(Collectors.toList());
-                                attrs.add(new AttributeBuilder().build(field.getName(), assignedPlans));
-                                break;
-                            default:
+        
+            // Support for newer Microsoft Graph SDK (v6.x+) that uses backingStore pattern
+            // instead of accessible fields via reflection
+            if (fields.length == 0) {
+                // Build map of getter methods to attribute names
+                Map<String, Method> attributeGetters = new HashMap<>();
+                for (Method method : User.class.getMethods()) {
+                    String methodName = method.getName();
+                    if (methodName.startsWith("get") && method.getParameterCount() == 0 
+                            && !methodName.equals("getClass")) {
+                        String attributeName = methodName.substring(3);
+                        if (attributeName.length() > 0) {
+                            attributeName = attributeName.substring(0, 1).toLowerCase() 
+                                    + attributeName.substring(1);
+                            attributeGetters.put(attributeName, method);
+                        }
+                    }
+                }
+        
+                // Special handling for passwordProfile and accountEnabled
+                if (user.getPasswordProfile() != null && user.getPasswordProfile().getPassword() != null) {
+                    attrs.add(AttributeBuilder.build(AzureAttributes.USER_PASSWORD_PROFILE,
+                            new GuardedString(user.getPasswordProfile().getPassword().toCharArray())));
+                }
+                if (user.getAccountEnabled() != null) {
+                    attrs.add(AttributeBuilder.build(AzureAttributes.USER_ACCOUNT_ENABLED, 
+                            user.getAccountEnabled()));
+                }
+        
+                // Process standard attributes via getters (matches all original switch cases)
+                String[] standardAttributes = {
+                    "displayName", "id", "userPrincipalName", "city", "country", "department",
+                    "businessPhones", "givenName", "onPremisesImmutableId", "jobTitle", "mail",
+                    "mobilePhone", "preferredLanguage", "officeLocation", "postalCode",
+                    "streetAddress", "surname", "state", "usageLocation", "companyName",
+                    "creationType", "employeeId", "onPremisesDistinguishedName",
+                    "onPremisesSecurityIdentifier", "showInAddressList", "proxyAddresses",
+                    "userType", "otherMails"
+                };
+        
+                for (String attrName : standardAttributes) {
+                    Method getter = attributeGetters.get(attrName);
+                    if (getter != null) {
+                        try {
+                            Object value = getter.invoke(user);
+                            if (value != null) {
+                                Attribute attr = AzureAttributes.doBuildAttributeFromClassField(
+                                        value, attrName, getter.getReturnType()).build();
+                                if (attr.getValue() != null && !attr.getValue().isEmpty()) {
+                                    attrs.add(attr);
+                                }
+                            }
+                        } catch (ReflectiveOperationException e) {
+                            LOG.warn("Error extracting attribute {0} via getter: {1}", attrName, e.getMessage());
+                        }
+                    }
+                }
+        
+                // Special handling for collection attributes with transformations
+                if (user.getProvisionedPlans() != null) {
+                    List<String> provisionedPlans = user.getProvisionedPlans().stream()
+                            .map(ProvisionedPlan::getService)
+                            .collect(Collectors.toList());
+                    attrs.add(AttributeBuilder.build("provisionedPlans", provisionedPlans));
+                }
+        
+                if (user.getAssignedLicenses() != null) {
+                    List<String> assignedLicenses = user.getAssignedLicenses().stream()
+                            .map(assignedLicense -> assignedLicense.getSkuId() == null 
+                                    ? "" : assignedLicense.getSkuId().toString())
+                            .collect(Collectors.toList());
+                    attrs.add(AttributeBuilder.build("assignedLicenses", assignedLicenses));
+                }
+        
+                if (user.getAssignedPlans() != null) {
+                    List<String> assignedPlans = user.getAssignedPlans().stream()
+                            .map(assignedPlan -> assignedPlan.getServicePlanId() == null 
+                                    ? "" : assignedPlan.getServicePlanId().toString())
+                            .collect(Collectors.toList());
+                    attrs.add(AttributeBuilder.build("assignedPlans", assignedPlans));
+                }
+            } else {
+                // Original field-based approach for older SDK versions with accessible fields
+                for (Field field : fields) {
+                    if (field.getAnnotation(JsonIgnore.class) == null) {
+                        field.setAccessible(true);
+                        if (field.getName().equals(AzureAttributes.USER_PASSWORD_PROFILE)
+                                && user.getPasswordProfile() != null 
+                                && user.getPasswordProfile().getPassword() != null) {
+                            attrs.add(AttributeBuilder.build(AzureAttributes.USER_PASSWORD_PROFILE,
+                                    new GuardedString(user.getPasswordProfile().getPassword().toCharArray())));
+                        } else if (field.getName().equals(AzureAttributes.USER_ACCOUNT_ENABLED)
+                                && user.getAccountEnabled() != null) {
+                            attrs.add(AttributeBuilder.build(AzureAttributes.USER_ACCOUNT_ENABLED, 
+                                    user.getAccountEnabled()));
+                        } else {
+                            switch (field.getName()) {
+                                case "displayName":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getDisplayName(), field.getName(), field.getType()).build());
+                                    break;
+                                case "id":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getId(), field.getName(), field.getType()).build());
+                                    break;
+                                case "userPrincipalName":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getUserPrincipalName(), field.getName(), field.getType()).build());
+                                    break;
+                                case "city":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getCity(), field.getName(), field.getType()).build());
+                                    break;
+                                case "country":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getCountry(), field.getName(), field.getType()).build());
+                                    break;
+                                case "department":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getDepartment(), field.getName(), field.getType()).build());
+                                    break;
+                                case "businessPhones":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getBusinessPhones(), field.getName(), field.getType()).build());
+                                    break;
+                                case "givenName":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getGivenName(), field.getName(), field.getType()).build());
+                                    break;
+                                case "onPremisesImmutableId":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getOnPremisesImmutableId(), field.getName(), field.getType()).build());
+                                    break;
+                                case "jobTitle":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getJobTitle(), field.getName(), field.getType()).build());
+                                    break;
+                                case "mail":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getMail(), field.getName(), field.getType()).build());
+                                    break;
+                                case "mobilePhone":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getMobilePhone(), field.getName(), field.getType()).build());
+                                    break;
+                                case "preferredLanguage":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getPreferredLanguage(), field.getName(), field.getType()).build());
+                                    break;
+                                case "officeLocation":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getOfficeLocation(), field.getName(), field.getType()).build());
+                                    break;
+                                case "postalCode":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getPostalCode(), field.getName(), field.getType()).build());
+                                    break;
+                                case "state":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getState(), field.getName(), field.getType()).build());
+                                    break;
+                                case "streetAddress":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getStreetAddress(), field.getName(), field.getType()).build());
+                                    break;
+                                case "surname":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getSurname(), field.getName(), field.getType()).build());
+                                    break;
+                                case "usageLocation":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getUsageLocation(), field.getName(), field.getType()).build());
+                                    break;
+                                case "companyName":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getCompanyName(), field.getName(), field.getType()).build());
+                                    break;
+                                case "creationType":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getCreationType(), field.getName(), field.getType()).build());
+                                    break;
+                                case "employeeId":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getEmployeeId(), field.getName(), field.getType()).build());
+                                    break;
+                                case "onPremisesDistinguishedName":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getOnPremisesDistinguishedName(), field.getName(), field.getType()).build());
+                                    break;
+                                case "onPremisesSecurityIdentifier":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getOnPremisesSecurityIdentifier(), field.getName(), field.getType()).build());
+                                    break;
+                                case "showInAddressList":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getShowInAddressList(), field.getName(), field.getType()).build());
+                                    break;
+                                case "proxyAddresses":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getProxyAddresses(), field.getName(), field.getType()).build());
+                                    break;
+                                case "userType":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getUserType(), field.getName(), field.getType()).build());
+                                    break;
+                                case "otherMails":
+                                    attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                            user.getOtherMails(), field.getName(), field.getType()).build());
+                                    break;
+                                case "provisionedPlans":
+                                    List<String> provisionedPlans = user.getProvisionedPlans() == null
+                                            ? null
+                                            : user.getProvisionedPlans().stream()
+                                                    .map(ProvisionedPlan::getService)
+                                                    .collect(Collectors.toList());
+                                    attrs.add(AttributeBuilder.build(field.getName(), provisionedPlans));
+                                    break;
+                                case "assignedLicenses":
+                                    List<String> assignedLicenses = user.getAssignedLicenses() == null
+                                            ? null
+                                            : user.getAssignedLicenses().stream()
+                                                    .map(assignedLicense -> assignedLicense.getSkuId() == null
+                                                            ? "" : assignedLicense.getSkuId().toString())
+                                                    .collect(Collectors.toList());
+                                    attrs.add(AttributeBuilder.build(field.getName(), assignedLicenses));
+                                    break;
+                                case "assignedPlans":
+                                    List<String> assignedPlans = user.getAssignedPlans() == null
+                                            ? null
+                                            : user.getAssignedPlans().stream()
+                                                    .map(assignedPlan -> assignedPlan.getServicePlanId() == null
+                                                            ? "" : assignedPlan.getServicePlanId().toString())
+                                                    .collect(Collectors.toList());
+                                    attrs.add(AttributeBuilder.build(field.getName(), assignedPlans));
+                                    break;
+                                default:
+                            }
                         }
                     }
                 }
             }
-
             for (Attribute toAttribute : attrs) {
                 String attributeName = toAttribute.getName();
                 for (String attributeToGetName : attributesToGet) {
@@ -1083,82 +1163,128 @@ public class AzureConnector implements
             Set<Attribute> attrs = new HashSet<>();
 
             Field[] fields = Group.class.getDeclaredFields();
-            for (Field field : fields) {
-                field.setAccessible(true);
-                switch (field.getName()) {
-                    case "id":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getId(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "mail":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getMail(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "mailEnabled":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getMailEnabled(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "onPremisesSecurityIdentifier":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(
-                                group.getOnPremisesSecurityIdentifier(), field.getName(), field.getType()).build());
-                        break;
-                    case "proxyAddresses":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getProxyAddresses(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "description":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getDescription(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "securityEnabled":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getSecurityEnabled(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "classification":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getClassification(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "groupTypes":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getGroupTypes(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "preferredLanguage":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getPreferredLanguage(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "securityIdentifier":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getSecurityIdentifier(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "theme":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getTheme(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "visibility":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getVisibility(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case AzureAttributes.GROUP_MAIL_NICKNAME:
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getMailNickname(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case AzureAttributes.GROUP_DISPLAY_NAME:
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getDisplayName(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "allowExternalSenders":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getAllowExternalSenders(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "autoSubscribeNewMembers":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getAutoSubscribeNewMembers(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "preferredDataLocation":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getPreferredDataLocation(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    default:
+        
+            // Support for newer Microsoft Graph SDK (v6.x+) using backingStore pattern
+            if (fields.length == 0) {
+                // Build map of getter methods to attribute names
+                Map<String, Method> attributeGetters = new HashMap<>();
+                for (Method method : Group.class.getMethods()) {
+                    String methodName = method.getName();
+                    if (methodName.startsWith("get") && method.getParameterCount() == 0 
+                            && !methodName.equals("getClass")) {
+                        String attributeName = methodName.substring(3);
+                        if (attributeName.length() > 0) {
+                            attributeName = attributeName.substring(0, 1).toLowerCase() 
+                                    + attributeName.substring(1);
+                            attributeGetters.put(attributeName, method);
+                        }
+                    }
+                }
+        
+                // Process standard attributes via getters
+                String[] standardAttributes = {
+                    "id", "mail", "mailEnabled", "onPremisesSecurityIdentifier", "proxyAddresses",
+                    "description", "securityEnabled", "classification", "groupTypes", "preferredLanguage",
+                    "securityIdentifier", "theme", "visibility", "mailNickname", "displayName",
+                    "allowExternalSenders", "autoSubscribeNewMembers", "preferredDataLocation"
+                };
+        
+                for (String attrName : standardAttributes) {
+                    Method getter = attributeGetters.get(attrName);
+                    if (getter != null) {
+                        try {
+                            Object value = getter.invoke(group);
+                            if (value != null) {
+                                Attribute attr = AzureAttributes.doBuildAttributeFromClassField(
+                                        value, attrName, getter.getReturnType()).build();
+                                if (attr.getValue() != null && !attr.getValue().isEmpty()) {
+                                    attrs.add(attr);
+                                }
+                            }
+                        } catch (ReflectiveOperationException e) {
+                            LOG.warn("Error extracting attribute {0} via getter: {1}", attrName, e.getMessage());
+                        }
+                    }
+                }
+            } else {
+                // Original field-based approach for older SDK versions
+                for (Field field : fields) {
+                    field.setAccessible(true);
+                    switch (field.getName()) {
+                        case "id":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getId(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "mail":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getMail(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "mailEnabled":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getMailEnabled(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "onPremisesSecurityIdentifier":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(
+                                    group.getOnPremisesSecurityIdentifier(), field.getName(), field.getType()).build());
+                            break;
+                        case "proxyAddresses":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getProxyAddresses(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "description":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getDescription(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "securityEnabled":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getSecurityEnabled(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "classification":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getClassification(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "groupTypes":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getGroupTypes(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "preferredLanguage":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getPreferredLanguage(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "securityIdentifier":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getSecurityIdentifier(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "theme":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getTheme(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "visibility":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getVisibility(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case AzureAttributes.GROUP_MAIL_NICKNAME:
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getMailNickname(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case AzureAttributes.GROUP_DISPLAY_NAME:
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getDisplayName(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "allowExternalSenders":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getAllowExternalSenders(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "autoSubscribeNewMembers":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getAutoSubscribeNewMembers(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "preferredDataLocation":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(group.getPreferredDataLocation(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        default:
+                    }
                 }
             }
             for (Attribute toAttribute : attrs) {
@@ -1196,44 +1322,86 @@ public class AzureConnector implements
 
         try {
             Set<Attribute> attrs = new HashSet<>();
-
+            
             Field[] fields = SubscribedSku.class.getDeclaredFields();
-            for (Field field : fields) {
-                field.setAccessible(true);
-                switch (field.getName()) {
-                    case "id":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getId(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "appliesTo":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getAppliesTo(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "capabilityStatus":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getCapabilityStatus(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "consumedUnits":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getConsumedUnits(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "prepaidUnits":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getPrepaidUnits(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "servicePlans":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getServicePlans(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "skuPartNumber":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getSkuPartNumber(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    case "oDataType":
-                        attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getOdataType(),
-                                field.getName(), field.getType()).build());
-                        break;
-                    default:
+            
+            // Support for newer Microsoft Graph SDK (v6.x+) using backingStore pattern
+            if (fields.length == 0) {
+                Map<String, Method> attributeGetters = new HashMap<>();
+                for (Method method : SubscribedSku.class.getMethods()) {
+                    String methodName = method.getName();
+                    if (methodName.startsWith("get") && method.getParameterCount() == 0 
+                            && !methodName.equals("getClass")) {
+                        String attributeName = methodName.substring(3);
+                        if (attributeName.length() > 0) {
+                            attributeName = attributeName.substring(0, 1).toLowerCase() 
+                                    + attributeName.substring(1);
+                            attributeGetters.put(attributeName, method);
+                        }
+                    }
+                }
+        
+                String[] standardAttributes = {
+                    "id", "appliesTo", "capabilityStatus", "consumedUnits", 
+                    "prepaidUnits", "servicePlans", "skuPartNumber", "odataType"
+                };
+        
+                for (String attrName : standardAttributes) {
+                    Method getter = attributeGetters.get(attrName);
+                    if (getter != null) {
+                        try {
+                            Object value = getter.invoke(subscribedSku);
+                            if (value != null) {
+                                Attribute attr = AzureAttributes.doBuildAttributeFromClassField(
+                                        value, attrName, getter.getReturnType()).build();
+                                if (attr.getValue() != null && !attr.getValue().isEmpty()) {
+                                    attrs.add(attr);
+                                }
+                            }
+                        } catch (ReflectiveOperationException e) {
+                            LOG.warn("Error extracting attribute {0} via getter: {1}", attrName, e.getMessage());
+                        }
+                    }
+                }
+            } else {
+                // Original field-based approach for older SDK versions
+                for (Field field : fields) {
+                    field.setAccessible(true);
+                    switch (field.getName()) {
+                        case "id":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getId(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "appliesTo":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getAppliesTo(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "capabilityStatus":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getCapabilityStatus(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "consumedUnits":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getConsumedUnits(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "prepaidUnits":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getPrepaidUnits(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "servicePlans":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getServicePlans(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "skuPartNumber":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getSkuPartNumber(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        case "oDataType":
+                            attrs.add(AzureAttributes.doBuildAttributeFromClassField(subscribedSku.getOdataType(),
+                                    field.getName(), field.getType()).build());
+                            break;
+                        default:
+                    }
                 }
             }
             for (Attribute toAttribute : attrs) {
