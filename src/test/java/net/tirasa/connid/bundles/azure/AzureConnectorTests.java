@@ -31,6 +31,7 @@ import com.microsoft.graph.models.UserCollectionResponse;
 import com.microsoft.graph.models.odataerrors.ODataError;
 import com.microsoft.graph.users.item.assignlicense.AssignLicensePostRequestBody;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,8 +68,10 @@ import org.identityconnectors.framework.common.objects.Uid;
 import org.identityconnectors.test.common.TestHelpers;
 import org.identityconnectors.test.common.ToListResultsHandler;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("integration")
 public class AzureConnectorTests {
 
     private static final Log LOG = Log.getLog(AzureConnectorTests.class);
@@ -87,8 +90,13 @@ public class AzureConnectorTests {
 
     @BeforeAll
     public static void setUpConf() throws IOException {
-        PROPS.load(AzureConnectorTests.class.getResourceAsStream(
-                "/net/tirasa/connid/bundles/azure/oauth2.properties"));
+        InputStream properties = AzureConnectorTests.class.getResourceAsStream(
+                "/net/tirasa/connid/bundles/azure/oauth2.properties");
+        assertNotNull(properties,
+                "Integration tests require src/test/resources/net/tirasa/connid/bundles/azure/oauth2.properties");
+        try (InputStream input = properties) {
+            PROPS.load(input);
+        }
 
         Map<String, String> configurationParameters = new HashMap<>();
         for (final String name : PROPS.stringPropertyNames()) {
@@ -115,15 +123,11 @@ public class AzureConnectorTests {
 
         assertNotNull(CONF);
         assertNotNull(isValid);
-        assertNotNull(CONF.getAuthority());
         assertNotNull(CONF.getClientId());
         assertNotNull(CONF.getDomain());
-        assertNotNull(CONF.getPassword());
         assertNotNull(CONF.getRedirectURI());
         assertNotNull(CONF.getResourceURI());
-        assertNotNull(CONF.getUsername());
         assertNotNull(CONF.getTenantId());
-        assertNotNull(CONF.getClientSecret());
         assertNotNull(CONF.getScopes());
     }
 

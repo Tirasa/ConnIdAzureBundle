@@ -282,10 +282,14 @@ public class AzureConnector implements
 
         if (configuration != null) {
 
-            if (client.getAuthenticated() != null) {
-                LOG.ok("Test was successful");
-            } else {
-                AzureUtils.handleGeneralError("Test error. Problems with client service");
+            try {
+                if (client.getAuthenticated().getAllUsers(1) != null) {
+                    LOG.ok("Test was successful");
+                } else {
+                    AzureUtils.handleGeneralError("Test error. Problems with client service");
+                }
+            } catch (RuntimeException e) {
+                AzureUtils.wrapGeneralError("While testing Azure Graph connection", e);
             }
 
         } else {

@@ -47,8 +47,6 @@ public class AzureClient extends AzureService {
     }
 
     public AzureClient getAuthenticated() {
-        checkAuth();
-
         return this;
     }
 
