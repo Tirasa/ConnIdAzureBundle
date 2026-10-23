@@ -283,7 +283,7 @@ public class AzureConnector implements
         if (configuration != null) {
 
             try {
-                if (client.getAuthenticated().getAllUsers(1) != null) {
+                if (client.getAllUsers(1) != null) {
                     LOG.ok("Test was successful");
                 } else {
                     AzureUtils.handleGeneralError("Test error. Problems with client service");
@@ -359,14 +359,14 @@ public class AzureConnector implements
                     if (pagesSize != -1) {
                         UserCollectionResponse response;
                         if (StringUtil.isNotBlank(cookie)) {
-                            response = client.getAuthenticated().getAllUsersNextPage(cookie);
+                            response = client.getAllUsersNextPage(cookie);
                         } else {
-                            response = client.getAuthenticated().getAllUsers(pagesSize);
+                            response = client.getAllUsers(pagesSize);
                         }
                         users = response.getValue();
                         cookie = response.getOdataNextLink();
                     } else {
-                        users = client.getAuthenticated().getAllUsers();
+                        users = client.getAllUsers();
                     }
                 } catch (Exception e) {
                     AzureUtils.wrapGeneralError("While getting Users!", e);
@@ -386,7 +386,7 @@ public class AzureConnector implements
 
                     User result = null;
                     try {
-                        result = client.getAuthenticated().getUser(AttributeUtil.getAsStringValue(key));
+                        result = client.getUser(AttributeUtil.getAsStringValue(key));
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError("While getting User : "
                                 + key.getName() + " - " + AttributeUtil.getAsStringValue(key), e);
@@ -397,7 +397,7 @@ public class AzureConnector implements
                 } else {
                     List<User> result = null;
                     try {
-                        result = client.getAuthenticated().getUsersFilteredBy(query);
+                        result = client.getUsersFilteredBy(query);
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError("While searching with key : "
                                 + key.getName() + " - " + AttributeUtil.getAsStringValue(key), e);
@@ -419,14 +419,14 @@ public class AzureConnector implements
                     if (pagesSize != -1) {
                         GroupCollectionResponse response;
                         if (StringUtil.isNotBlank(cookie)) {
-                            response = client.getAuthenticated().getAllGroupsNextPage(cookie);
+                            response = client.getAllGroupsNextPage(cookie);
                         } else {
-                            response = client.getAuthenticated().getAllGroups(pagesSize);
+                            response = client.getAllGroups(pagesSize);
                         }
                         groups = response.getValue();
                         cookie = response.getOdataNextLink();
                     } else {
-                        groups = client.getAuthenticated().getAllGroups();
+                        groups = client.getAllGroups();
                     }
                 } catch (Exception e) {
                     AzureUtils.wrapGeneralError("While getting Groups!", e);
@@ -445,7 +445,7 @@ public class AzureConnector implements
                         || AzureAttributes.GROUP_ID.equals(key.getName()))) {
                     Group result = null;
                     try {
-                        result = client.getAuthenticated().getGroup(AttributeUtil.getAsStringValue(key));
+                        result = client.getGroup(AttributeUtil.getAsStringValue(key));
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError("While getting Group!", e);
                     }
@@ -455,7 +455,7 @@ public class AzureConnector implements
                 } else {
                     List<Group> result = null;
                     try {
-                        result = client.getAuthenticated().getGroupsFilteredBy(query);
+                        result = client.getGroupsFilteredBy(query);
                     } catch (Exception e) {
                         AzureUtils.wrapGeneralError("While searching with key : "
                                 + key.getName() + " - " + AttributeUtil.getAsStringValue(key), e);
@@ -469,7 +469,7 @@ public class AzureConnector implements
             if (key == null) {
                 List<SubscribedSku> subscribedSkus = null;
                 try {
-                    subscribedSkus = client.getAuthenticated().getCurrentTenantSubscriptions();
+                    subscribedSkus = client.getCurrentTenantSubscriptions();
                 } catch (Exception e) {
                     AzureUtils.wrapGeneralError("While getting subscriptions!", e);
                 }
@@ -534,7 +534,7 @@ public class AzureConnector implements
                     filter(attribute -> attribute.getValue() != null).
                     forEach(attribute -> doUserSetAttribute(attribute.getName(), attribute.getValue(), user));
             try {
-                createdUser = client.getAuthenticated().createUser(user);
+                createdUser = client.createUser(user);
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not create User : " + username, e);
             }
@@ -544,7 +544,7 @@ public class AzureConnector implements
             if (!CollectionUtil.isEmpty(groups)) {
                 for (Object group : groups) {
                     try {
-                        client.getAuthenticated().addUserToGroup(createdUser.getId(), group.toString());
+                        client.addUserToGroup(createdUser.getId(), group.toString());
                     } catch (Exception e) {
                         LOG.error("Could not add User {0} to Group {1} ", createdUser.getId(), group, e);
                     }
@@ -561,7 +561,7 @@ public class AzureConnector implements
                     body.setAddLicenses(Collections.singletonList(assignedLicense));
 
                     try {
-                        client.getAuthenticated().assignLicense(createdUser.getId(), body);
+                        client.assignLicense(createdUser.getId(), body);
                     } catch (RuntimeException ex) {
                         LOG.error("While assigning license {0} to user {1}", license, createdUser, ex);
                     }
@@ -587,7 +587,7 @@ public class AzureConnector implements
                     forEach(attribute -> doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
 
             try {
-                return new Uid(client.getAuthenticated().createGroup(group).getId());
+                return new Uid(client.createGroup(group).getId());
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not create Group : " + groupName, e);
             }
@@ -615,11 +615,11 @@ public class AzureConnector implements
         if (ObjectClass.ACCOUNT.equals(objectClass)) {
             try {
                 DirectoryObjectCollectionResponse groups =
-                        client.getAuthenticated().getAllGroupsForUser(uid.getUidValue());
+                        client.getAllGroupsForUser(uid.getUidValue());
 
                 while (groups != null) {
                     groups.getValue().stream().filter(Group.class::isInstance).map(Group.class::cast).
-                            forEach(group -> client.getAuthenticated().
+                            forEach(group -> client.
                             deleteUserFromGroup(uid.getUidValue(), group.getId()));
 
                     // Get the next page
@@ -627,7 +627,7 @@ public class AzureConnector implements
                     if (odataNextLink == null || odataNextLink.isEmpty()) {
                         break;
                     } else {
-                        groups = client.getAuthenticated().getAllGroupsForUser(uid.getUidValue(), odataNextLink);
+                        groups = client.getAllGroupsForUser(uid.getUidValue(), odataNextLink);
                     }
                 }
             } catch (Exception e) {
@@ -635,14 +635,14 @@ public class AzureConnector implements
             }
 
             try {
-                client.getAuthenticated().deleteUser(uid.getUidValue());
+                client.deleteUser(uid.getUidValue());
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not delete User " + uid.getUidValue(), e);
             }
 
         } else if (ObjectClass.GROUP.equals(objectClass)) {
             try {
-                client.getAuthenticated().deleteGroup(uid.getUidValue());
+                client.deleteGroup(uid.getUidValue());
             } catch (Exception e) {
                 AzureUtils.wrapGeneralError("Could not delete Group " + uid.getUidValue(), e);
             }
@@ -703,7 +703,7 @@ public class AzureConnector implements
                             access(pwd -> user.setPasswordProfile(AzureUtils.createPassword(new String(pwd))));
                 }
 
-                client.getAuthenticated().updateUser(user);
+                client.updateUser(user);
 
                 returnUid = new Uid(user.getId());
             } catch (Exception e) {
@@ -714,11 +714,11 @@ public class AzureConnector implements
             Set<String> ownGroups = new HashSet<>();
             try {
                 DirectoryObjectCollectionResponse groups =
-                        client.getAuthenticated().getAllGroupsForUser(uid.getUidValue());
+                        client.getAllGroupsForUser(uid.getUidValue());
 
                 while (groups != null) {
                     groups.getValue().stream().filter(Group.class::isInstance).map(Group.class::cast).
-                            forEach(group -> client.getAuthenticated().
+                            forEach(group -> client.
                             deleteUserFromGroup(uid.getUidValue(), group.getId()));
 
                     // Get the next page
@@ -726,7 +726,7 @@ public class AzureConnector implements
                     if (odataNextLink == null || odataNextLink.isEmpty()) {
                         break;
                     } else {
-                        groups = client.getAuthenticated().getAllGroupsForUser(uid.getUidValue(), odataNextLink);
+                        groups = client.getAllGroupsForUser(uid.getUidValue(), odataNextLink);
                     }
                 }
             } catch (Exception ex) {
@@ -737,7 +737,7 @@ public class AzureConnector implements
             for (Object group : groups) {
                 if (!ownGroups.contains(group.toString())) {
                     try {
-                        client.getAuthenticated().addUserToGroup(returnUid.getUidValue(), group.toString());
+                        client.addUserToGroup(returnUid.getUidValue(), group.toString());
                         LOG.ok("User added to Group: {0} after update", group);
                     } catch (Exception e) {
                         LOG.error(e, "Could not add User {0} to Group {1} ", returnUid.getUidValue(), group);
@@ -747,7 +747,7 @@ public class AzureConnector implements
             for (String group : ownGroups) {
                 if (!groups.contains(group)) {
                     try {
-                        client.getAuthenticated().deleteUserFromGroup(returnUid.getUidValue(), group);
+                        client.deleteUserFromGroup(returnUid.getUidValue(), group);
                         LOG.ok("User removed from group: {0} after update", group);
                     } catch (Exception e) {
                         LOG.error(e, "Could not remove Group {0} from User {1} ", group, returnUid.getUidValue());
@@ -756,7 +756,7 @@ public class AzureConnector implements
             }
 
             // licenses
-            User updatedUser = client.getAuthenticated().getUser(returnUid.getUidValue());
+            User updatedUser = client.getUser(returnUid.getUidValue());
             if (updatedUser == null) {
                 LOG.error("While reading user {0} after update in order to handle licenses update",
                         returnUid.getUidValue());
@@ -774,7 +774,7 @@ public class AzureConnector implements
                         body.setRemoveLicenses(assignedSkuIds);
 
                         try {
-                            client.getAuthenticated().assignLicense(user.getId(), body);
+                            client.assignLicense(user.getId(), body);
                         } catch (RuntimeException ex) {
                             LOG.error(ex, "While removing licenses from user {0}", user);
                         }
@@ -799,7 +799,7 @@ public class AzureConnector implements
 
                             // executing an assignment per single license in order to skip errors from invalid licenses
                             try {
-                                client.getAuthenticated().assignLicense(user.getId(), body);
+                                client.assignLicense(user.getId(), body);
                             } catch (RuntimeException ex) {
                                 LOG.error(ex, "While assigning license {0} to user {1}", newLicense, user);
                             }
@@ -811,7 +811,7 @@ public class AzureConnector implements
                         body.setRemoveLicenses(toRemove);
 
                         try {
-                            client.getAuthenticated().assignLicense(user.getId(), body);
+                            client.assignLicense(user.getId(), body);
                         } catch (RuntimeException ex) {
                             LOG.error(ex, "While removing licenses from user {0}", user);
                         }
@@ -844,7 +844,7 @@ public class AzureConnector implements
             try {
                 replaceAttributes.stream().filter(attribute -> attribute.getValue() != null).
                         forEach(attribute -> doGroupSetAttribute(attribute.getName(), attribute.getValue(), group));
-                client.getAuthenticated().updateGroup(group);
+                client.updateGroup(group);
 
                 returnUid = new Uid(group.getId());
             } catch (Exception e) {
@@ -1056,7 +1056,7 @@ public class AzureConnector implements
         }
 
         if (attributesToGet.contains(PredefinedAttributes.GROUPS_NAME)) {
-            DirectoryObjectCollectionResponse groups = client.getAuthenticated().getAllGroupsForUser(user.getId());
+            DirectoryObjectCollectionResponse groups = client.getAllGroupsForUser(user.getId());
 
             List<String> groupNames = new ArrayList<>();
             while (groups != null) {
@@ -1068,7 +1068,7 @@ public class AzureConnector implements
                 if (odataNextLink == null || odataNextLink.isEmpty()) {
                     break;
                 } else {
-                    groups = client.getAuthenticated().getAllGroupsForUser(user.getId(), odataNextLink);
+                    groups = client.getAllGroupsForUser(user.getId(), odataNextLink);
                 }
             }
             builder.addAttribute(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, groupNames));
@@ -1183,7 +1183,7 @@ public class AzureConnector implements
         }
 
         if (attributesToGet.contains(PredefinedAttributes.GROUPS_NAME)) {
-            List<String> groupNames = client.getAuthenticated().getAllGroupsForGroup(group.getId()).
+            List<String> groupNames = client.getAllGroupsForGroup(group.getId()).
                     stream().map(Group::getMailNickname).
                     collect(Collectors.toList());
             builder.addAttribute(AttributeBuilder.build(PredefinedAttributes.GROUPS_NAME, groupNames));

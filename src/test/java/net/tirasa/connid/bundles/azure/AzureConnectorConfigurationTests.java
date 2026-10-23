@@ -58,7 +58,7 @@ public class AzureConnectorConfigurationTests {
         AzureConnectorConfiguration configuration = newConfiguration();
         configuration.setClientSecret("client-secret");
 
-        assertNotNull(new AzureClient(configuration).getAuthenticated().getGraphServiceClient());
+        assertNotNull(new AzureClient(configuration).getGraphServiceClient());
     }
 
     @Test
@@ -70,7 +70,7 @@ public class AzureConnectorConfigurationTests {
         configuration.setAuthority("invalid-authority");
 
         assertDoesNotThrow(configuration::validate);
-        assertNotNull(new AzureClient(configuration).getAuthenticated().getGraphServiceClient());
+        assertNotNull(new AzureClient(configuration).getGraphServiceClient());
     }
 
     @Test
@@ -81,7 +81,7 @@ public class AzureConnectorConfigurationTests {
         configuration.setAuthority("https://login.microsoftonline.com/tenant-id");
 
         assertDoesNotThrow(configuration::validate);
-        assertNotNull(new AzureClient(configuration).getAuthenticated().getGraphServiceClient());
+        assertNotNull(new AzureClient(configuration).getGraphServiceClient());
     }
 
     @Test
@@ -106,7 +106,7 @@ public class AzureConnectorConfigurationTests {
         AzureConnectorConfiguration configuration = newConfiguration();
         configuration.setCertificatePath("/path/to/certificate.pfx");
 
-        assertNotNull(new AzureClient(configuration).getAuthenticated().getGraphServiceClient());
+        assertNotNull(new AzureClient(configuration).getGraphServiceClient());
     }
 
     @Test
@@ -118,7 +118,7 @@ public class AzureConnectorConfigurationTests {
         configuration.setAuthority("invalid-authority");
 
         assertDoesNotThrow(configuration::validate);
-        assertNotNull(new AzureClient(configuration).getAuthenticated().getGraphServiceClient());
+        assertNotNull(new AzureClient(configuration).getGraphServiceClient());
     }
 
     @Test
@@ -128,7 +128,7 @@ public class AzureConnectorConfigurationTests {
         configuration.setUsername("expired@example.com");
 
         assertDoesNotThrow(configuration::validate);
-        assertNotNull(new AzureClient(configuration).getAuthenticated().getGraphServiceClient());
+        assertNotNull(new AzureClient(configuration).getGraphServiceClient());
     }
 
     @Test
@@ -160,7 +160,7 @@ public class AzureConnectorConfigurationTests {
         configuration.setUsername("user@example.com");
 
         assertDoesNotThrow(configuration::validate);
-        assertNotNull(new AzureClient(configuration).getAuthenticated().getGraphServiceClient());
+        assertNotNull(new AzureClient(configuration).getGraphServiceClient());
     }
 
     @Test
