@@ -69,8 +69,7 @@
     <azure.identity.version>1.18.7</azure.identity.version>
     <azure.msal4j.version>1.26.0</azure.msal4j.version>
      
-    <java.version>21</java.version>
-    <targetJdk>${java.version}</targetJdk>
+    <java.version>1.8</java.version>
         
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
