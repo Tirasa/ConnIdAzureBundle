@@ -238,8 +238,38 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <inherited>true</inherited>
         <configuration>
+          <skip>false</skip>
+          <excludedGroups>integration</excludedGroups>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>ianal-maven-plugin</artifactId>
+        <configuration>
           <skip>true</skip>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.geronimo.genesis.plugins</groupId>
+        <artifactId>tools-maven-plugin</artifactId>
+        <version>1.4</version>
+        <configuration>
+          <requiredFiles>
+            <requiredFile>LICENSE</requiredFile>
+          </requiredFiles>
+          <strict>true</strict>
+        </configuration>
+        <executions>
+          <execution>
+            <id>verify-legal-files</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>verify-legal-files</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Put NOTICE and LICENSE files in all artifacts and javadocs -->
@@ -357,6 +387,7 @@
                 </goals>
                 <configuration>
                   <skip>false</skip>
+                  <excludedGroups combine.self="override"/>
                   <includes>
                     <include>**/*Tests.java</include>
                   </includes>

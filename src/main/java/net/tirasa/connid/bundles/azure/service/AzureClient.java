@@ -46,12 +46,6 @@ public class AzureClient extends AzureService {
         super(config);
     }
 
-    public AzureClient getAuthenticated() {
-        checkAuth();
-
-        return this;
-    }
-
     /**
      *
      * @return List of Users

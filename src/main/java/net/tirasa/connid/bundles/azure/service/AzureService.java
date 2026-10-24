@@ -15,6 +15,10 @@
  */
 package net.tirasa.connid.bundles.azure.service;
 
+import com.azure.core.credential.AccessToken;
+import com.azure.core.credential.TokenCredential;
+import com.azure.identity.ClientCertificateCredential;
+import com.azure.identity.ClientCertificateCredentialBuilder;
 import com.azure.identity.ClientSecretCredential;
 import com.azure.identity.ClientSecretCredentialBuilder;
 import com.microsoft.aad.msal4j.IAuthenticationResult;
@@ -24,6 +28,7 @@ import com.microsoft.graph.serviceclient.GraphServiceClient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -40,11 +45,13 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
+import org.identityconnectors.framework.common.exceptions.ConnectorException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import reactor.core.publisher.Mono;
 
 public class AzureService {
 
@@ -163,60 +170,99 @@ public class AzureService {
 
     public AzureService(final AzureConnectorConfiguration config) {
         this.config = config;
-    }
-
-    private void doAuth() {
-        LOG.ok("Performing Azure account authentication");
-
-        PublicClientApplication pca;
-        try {
-            pca = PublicClientApplication.builder(config.getClientId())
-                    .authority(config.getAuthority())
-                    .build();
-
-            UserNamePasswordParameters parameters = UserNamePasswordParameters.builder(
-                    Collections.singleton(config.getScopes()),
-                    config.getUsername(),
-                    config.getPassword().toCharArray()).
-                    build();
-
-            authenticationResult = pca.acquireToken(parameters).join();
-            LOG.ok("==username/password flow succeeded");
-
-        } catch (MalformedURLException ex) {
-            AzureUtils.handleGeneralError("While performing Azure authentication", ex);
-        }
-    }
-
-    protected void checkAuth() {
-        if (!isAuthenticated()) {
-            doAuth();
-        }
-        checkTokenExpiry();
-    }
-
-    private boolean isAuthenticated() {
-        return authenticationResult != null && StringUtil.isNotBlank(authenticationResult.accessToken());
-    }
-
-    private void checkTokenExpiry() {
-        Date expireOnDate = authenticationResult.expiresOnDate();
-        Date currentDate = new Date();
-        if (currentDate.after(expireOnDate)) {
-            LOG.ok("Token expired! Refreshing...");
-            doAuth();
+        if (StringUtil.isNotBlank(config.getCertificatePath())) {
+            LOG.info("Azure authentication configured: certificate");
+        } else if (StringUtil.isNotBlank(config.getClientSecret())) {
+            LOG.info("Azure authentication configured: client secret");
+        } else {
+            LOG.warn("Azure authentication configured: legacy username/password [deprecated]");
         }
     }
 
     public GraphServiceClient getGraphServiceClient() {
-        checkAuth();
+        try {
+            GraphServiceClient client = new GraphServiceClient(getCredential(), config.getScopes());
+            LOG.ok("Microsoft Graph client created");
+            return client;
+        } catch (RuntimeException e) {
+            LOG.error(e, "Could not create Microsoft Graph client or its authentication credentials");
+            throw e;
+        }
+    }
 
-        ClientSecretCredential clientSecretCredential = new ClientSecretCredentialBuilder()
+    private TokenCredential getCredential() {
+        if (StringUtil.isNotBlank(config.getCertificatePath())) {
+            LOG.ok("Selecting certificate authentication");
+            return getCertificateCredential();
+        }
+        if (StringUtil.isNotBlank(config.getClientSecret())) {
+            LOG.ok("Selecting client secret authentication");
+            return getClientSecretCredential();
+        }
+        LOG.ok("Selecting legacy username/password authentication");
+        return getLegacyCredential();
+    }
+
+    private ClientCertificateCredential getCertificateCredential() {
+        LOG.ok("Building PFX certificate credential");
+        ClientCertificateCredentialBuilder builder = new ClientCertificateCredentialBuilder()
+                .clientId(config.getClientId())
+                .tenantId(config.getTenantId())
+                .pfxCertificate(config.getCertificatePath());
+        if (StringUtil.isNotBlank(config.getCertificatePassword())) {
+            builder.clientCertificatePassword(config.getCertificatePassword());
+        }
+        ClientCertificateCredential credential = builder.build();
+        LOG.ok("Certificate credential built");
+        return credential;
+    }
+
+    private ClientSecretCredential getClientSecretCredential() {
+        LOG.ok("Building client secret credential");
+        ClientSecretCredential credential = new ClientSecretCredentialBuilder()
                 .clientId(config.getClientId())
                 .clientSecret(config.getClientSecret())
                 .tenantId(config.getTenantId())
                 .build();
+        LOG.ok("Client secret credential built");
+        return credential;
+    }
 
-        return new GraphServiceClient(clientSecretCredential, config.getScopes());
+    private TokenCredential getLegacyCredential() {
+        LOG.ok("Creating legacy credential");
+        return request -> Mono.fromCallable(this::getLegacyToken);
+    }
+
+    private AccessToken getLegacyToken() {
+        if (authenticationResult == null || StringUtil.isBlank(authenticationResult.accessToken())
+                || new Date().after(authenticationResult.expiresOnDate())) {
+            if (authenticationResult == null || StringUtil.isBlank(authenticationResult.accessToken())) {
+                LOG.info("No cached token is available");
+            } else {
+                LOG.info("Renewing authentication token: cached token expired at {0}",
+                        authenticationResult.expiresOnDate());
+            }
+            try {
+                PublicClientApplication application = PublicClientApplication.builder(config.getClientId())
+                        .authority(config.getAuthority())
+                        .build();
+                UserNamePasswordParameters parameters = UserNamePasswordParameters.builder(
+                        Collections.singleton(config.getScopes()),
+                        config.getUsername(),
+                        config.getPassword().toCharArray()).build();
+                authenticationResult = application.acquireToken(parameters).join();
+                LOG.info("Authentication succeeded. Token expires at {0}", authenticationResult.expiresOnDate());
+            } catch (MalformedURLException e) {
+                LOG.error(e, "Authentication failed: invalid authority URL");
+                throw new ConnectorException("Invalid authority for authentication", e);
+            } catch (RuntimeException e) {
+                LOG.error(e, "Could not acquire or renew the authentication token");
+                throw e;
+            }
+        } else {
+            LOG.ok("Reusing cached authentication token: expires at {0}", authenticationResult.expiresOnDate());
+        }
+        return new AccessToken(authenticationResult.accessToken(),
+                authenticationResult.expiresOnDate().toInstant().atOffset(ZoneOffset.UTC));
     }
 }

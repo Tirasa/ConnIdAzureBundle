@@ -31,6 +31,7 @@ import com.microsoft.graph.models.UserCollectionResponse;
 import com.microsoft.graph.models.odataerrors.ODataError;
 import com.microsoft.graph.users.item.assignlicense.AssignLicensePostRequestBody;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,8 +68,10 @@ import org.identityconnectors.framework.common.objects.Uid;
 import org.identityconnectors.test.common.TestHelpers;
 import org.identityconnectors.test.common.ToListResultsHandler;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("integration")
 public class AzureConnectorTests {
 
     private static final Log LOG = Log.getLog(AzureConnectorTests.class);
@@ -87,8 +90,13 @@ public class AzureConnectorTests {
 
     @BeforeAll
     public static void setUpConf() throws IOException {
-        PROPS.load(AzureConnectorTests.class.getResourceAsStream(
-                "/net/tirasa/connid/bundles/azure/oauth2.properties"));
+        InputStream properties = AzureConnectorTests.class.getResourceAsStream(
+                "/net/tirasa/connid/bundles/azure/oauth2.properties");
+        assertNotNull(properties,
+                "Integration tests require src/test/resources/net/tirasa/connid/bundles/azure/oauth2.properties");
+        try (InputStream input = properties) {
+            PROPS.load(input);
+        }
 
         Map<String, String> configurationParameters = new HashMap<>();
         for (final String name : PROPS.stringPropertyNames()) {
@@ -115,15 +123,11 @@ public class AzureConnectorTests {
 
         assertNotNull(CONF);
         assertNotNull(isValid);
-        assertNotNull(CONF.getAuthority());
         assertNotNull(CONF.getClientId());
         assertNotNull(CONF.getDomain());
-        assertNotNull(CONF.getPassword());
         assertNotNull(CONF.getRedirectURI());
         assertNotNull(CONF.getResourceURI());
-        assertNotNull(CONF.getUsername());
         assertNotNull(CONF.getTenantId());
-        assertNotNull(CONF.getClientSecret());
         assertNotNull(CONF.getScopes());
     }
 
@@ -193,14 +197,14 @@ public class AzureConnectorTests {
         if (testUserUid != null) {
             connector.delete(ObjectClass.ACCOUNT, new Uid(testUserUid), new OperationOptionsBuilder().build());
             try {
-                client.getAuthenticated().deleteUser(testUserUid);
+                client.deleteUser(testUserUid);
                 fail(); // must fail
             } catch (RuntimeException e) {
                 assertNotNull(e);
             }
 
             try {
-                client.getAuthenticated().getUser(testUserUid);
+                client.getUser(testUserUid);
                 fail(); // must fail
             } catch (ODataError e) {
                 assertNotNull(e);
@@ -210,14 +214,14 @@ public class AzureConnectorTests {
         if (testGroupUid != null) {
             connector.delete(ObjectClass.GROUP, new Uid(testGroupUid), new OperationOptionsBuilder().build());
             try {
-                client.getAuthenticated().deleteGroup(testGroupUid);
+                client.deleteGroup(testGroupUid);
                 fail(); // must fail
             } catch (RuntimeException e) {
                 assertNotNull(e);
             }
 
             try {
-                client.getAuthenticated().getGroup(testGroupUid);
+                client.getGroup(testGroupUid);
                 fail(); // must fail
             } catch (ODataError e) {
                 assertNotNull(e);
@@ -230,10 +234,10 @@ public class AzureConnectorTests {
             final String testUserUid,
             final String testGroupUid) {
         if (testUserUid != null) {
-            client.getAuthenticated().deleteUser(testUserUid);
+            client.deleteUser(testUserUid);
 
             try {
-                client.getAuthenticated().getUser(testUserUid);
+                client.getUser(testUserUid);
                 fail(); // must fail
             } catch (RuntimeException e) {
                 assertNotNull(e);
@@ -241,10 +245,10 @@ public class AzureConnectorTests {
         }
 
         if (testGroupUid != null) {
-            client.getAuthenticated().deleteGroup(testGroupUid);
+            client.deleteGroup(testGroupUid);
 
             try {
-                client.getAuthenticated().getGroup(testGroupUid);
+                client.getGroup(testGroupUid);
                 fail(); // must fail
             } catch (RuntimeException e) {
                 assertNotNull(e);
@@ -276,7 +280,7 @@ public class AzureConnectorTests {
             testGroupUid = created.getUidValue();
 
             // GET GROUP
-            Group group = client.getAuthenticated().getGroup(testGroupUid);
+            Group group = client.getGroup(testGroupUid);
             assertNotNull(group);
             assertEquals(group.getId(), testGroupUid);
 
@@ -307,7 +311,7 @@ public class AzureConnectorTests {
             testUserUid = created.getUidValue();
 
             // GET USER
-            User user = client.getAuthenticated().getUser(testUserUid);
+            User user = client.getUser(testUserUid);
             assertNotNull(user);
             assertEquals(user.getId(), created.getUidValue());
             assertEquals(true, user.getAccountEnabled());
@@ -327,13 +331,13 @@ public class AzureConnectorTests {
             assertNotNull(updated);
 
             // GET USER
-            user = client.getAuthenticated().getUser(updated.getUidValue());
+            user = client.getUser(updated.getUidValue());
             assertNotNull(user);
             assertEquals(user.getId(), updated.getUidValue());
             // can't test password update here, Azure API always return '"passwordProfile": null'
 
             // GET USER GROUPS
-            List<Group> groupsForUser = client.getAuthenticated().getAllGroupsForUser(testUserUid).getValue().stream().
+            List<Group> groupsForUser = client.getAllGroupsForUser(testUserUid).getValue().stream().
                     filter(Group.class::isInstance).map(Group.class::cast).collect(Collectors.toList());
 
             assertNotNull(groupsForUser);
@@ -362,19 +366,19 @@ public class AzureConnectorTests {
 
             LOG.info("Updated Group with old name {0} and new name {1}", group.getDisplayName(), groupName);
 
-            List<Group> userGroups = client.getAuthenticated().getAllGroupsForUser(testUserUid).getValue().stream().
+            List<Group> userGroups = client.getAllGroupsForUser(testUserUid).getValue().stream().
                     filter(Group.class::isInstance).map(Group.class::cast).collect(Collectors.toList());
             assertNotNull(userGroups);
             assertFalse(userGroups.isEmpty());
 
             // GET MEMBERS OF
             List<String> memberGroups =
-                    client.getAuthenticated().getMemberGroups(testUserUid, false);
+                    client.getMemberGroups(testUserUid, false);
             assertNotNull(memberGroups);
             LOG.info("getMemberGroups : {0}", memberGroups);
 
             List<String> memberObjects =
-                    client.getAuthenticated().getMemberObjects(testUserUid, false);
+                    client.getMemberObjects(testUserUid, false);
             assertNotNull(memberObjects);
             LOG.info("getMemberObjects : {0}", memberObjects);
 
@@ -403,7 +407,7 @@ public class AzureConnectorTests {
 
             // GET NEW USER (to check 'accountEnabled' update and licenses)
             assertNotEquals(user.getAccountEnabled(), newStatusValue);
-            User updatedUser = client.getAuthenticated().getUser(testUserUid);
+            User updatedUser = client.getUser(testUserUid);
             assertEquals(updatedUser.getAccountEnabled(), newStatusValue);
             if (testLicenses()) {
                 assertTrue(updatedUser.getAssignedLicenses().isEmpty());
@@ -426,7 +430,7 @@ public class AzureConnectorTests {
             assertNotEquals(updatedUser.getDisplayName(), anotherUsername);
 
             // GET NEW USER (to check update using 'userPrincipalName' attribute)
-            User anotherUpdatedUser = client.getAuthenticated().getUser(testUserUid);
+            User anotherUpdatedUser = client.getUser(testUserUid);
             assertEquals(anotherUpdatedUser.getUserPrincipalName(), user.getUserPrincipalName());
 
             testUserUid = updated.getUidValue();
@@ -434,19 +438,19 @@ public class AzureConnectorTests {
             LOG.info("Updated User with old name {0} and new name {1}", user.getDisplayName(), anotherUsername);
 
             // GET ALL USERS
-            List<User> users = client.getAuthenticated().getAllUsers();
+            List<User> users = client.getAllUsers();
             assertNotNull(users);
             assertTrue(!users.isEmpty());
 
             // GET ALL GROUPS
-            List<Group> groups = client.getAuthenticated().getAllGroups();
+            List<Group> groups = client.getAllGroups();
             assertNotNull(groups);
             assertTrue(!groups.isEmpty());
 
             // GET GROUP MEMBERS
             // after update group has no members because I did not add user groups to user attributes list
             // see update() function for more info
-            List<User> groupMembers = client.getAuthenticated().getAllMembersOfGroup(testGroupUid);
+            List<User> groupMembers = client.getAllMembersOfGroup(testGroupUid);
             assertNotNull(groupMembers);
             assertEquals(groupMembers.size(), 0);
 
@@ -454,11 +458,11 @@ public class AzureConnectorTests {
             AzureFilter filter = new AzureFilter(AzureFilterOp.EQUALS,
                     AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, anotherUsername),
                     anotherUsername, false, null);
-            List<User> usersFound1 = client.getAuthenticated().getUsersFilteredBy(filter);
+            List<User> usersFound1 = client.getUsersFilteredBy(filter);
             filter = new AzureFilter(AzureFilterOp.EQUALS,
                     AttributeBuilder.build(AzureAttributes.USER_PRINCIPAL_NAME, user.getUserPrincipalName()),
                     user.getUserPrincipalName(), false, null);
-            List<User> usersFound2 = client.getAuthenticated().getUsersFilteredBy(filter);
+            List<User> usersFound2 = client.getUsersFilteredBy(filter);
             assertNotNull(usersFound1);
             assertTrue(!usersFound1.isEmpty());
             assertNotNull(usersFound2);
@@ -468,7 +472,7 @@ public class AzureConnectorTests {
                 //DELETE USER
                 connector.delete(ObjectClass.ACCOUNT, new Uid(testUserUid), new OperationOptionsBuilder().build());
                 try {
-                    client.getAuthenticated().getUser(testUserUid);
+                    client.getUser(testUserUid);
                     fail(); // must fail
                 } catch (RuntimeException e) {
                     assertNotNull(e);
@@ -492,13 +496,13 @@ public class AzureConnectorTests {
                 assertNotNull(createdGroup365);
 
                 String testGroup365Uid = createdGroup365.getUidValue();
-                Group group365 = client.getAuthenticated().getGroup(testGroup365Uid);
+                Group group365 = client.getGroup(testGroup365Uid);
                 assertNotNull(group365);
 
                 //DELETE GROUP
                 connector.delete(ObjectClass.GROUP, new Uid(testGroup365Uid), new OperationOptionsBuilder().build());
                 try {
-                    client.getAuthenticated().getGroup(testGroup365Uid);
+                    client.getGroup(testGroup365Uid);
                     fail(); // must fail
                 } catch (RuntimeException e) {
                     assertNotNull(e);
@@ -578,7 +582,7 @@ public class AzureConnectorTests {
             user.setPasswordProfile(AzureUtils.createPassword("Password01"));
             user.setUsageLocation("NL");
 
-            User userCreated = client.getAuthenticated().createUser(user);
+            User userCreated = client.createUser(user);
             assertNotNull(userCreated);
             assertNotNull(userCreated.getId());
             LOG.info("userCreated : {0}", userCreated);
@@ -590,7 +594,7 @@ public class AzureConnectorTests {
             group.setMailEnabled(false);
             group.setSecurityEnabled(true);
 
-            Group groupCreated = client.getAuthenticated().createGroup(group);
+            Group groupCreated = client.createGroup(group);
             assertNotNull(groupCreated);
             assertNotNull(groupCreated.getId());
             LOG.info("groupCreated : {0}", groupCreated);
@@ -599,13 +603,13 @@ public class AzureConnectorTests {
             testGroup = groupCreated.getId();
 
             // GET USER
-            User userFound = client.getAuthenticated().getUser(testUser);
+            User userFound = client.getUser(testUser);
             assertNotNull(userFound);
             assertNotNull(userFound.getId());
             LOG.info("User found : {0}", userFound);
 
             // GET GROUP
-            Group groupFound = client.getAuthenticated().getGroup(testGroup);
+            Group groupFound = client.getGroup(testGroup);
             assertNotNull(groupFound);
             assertNotNull(groupFound.getId());
             LOG.info("Group found : {0}", groupFound);
@@ -616,24 +620,24 @@ public class AzureConnectorTests {
             }
 
             // GET ALL
-            List<User> users = client.getAuthenticated().getAllUsers();
+            List<User> users = client.getAllUsers();
             assertNotNull(users);
             assertFalse(users.isEmpty());
             LOG.info("Users : {0}", users);
 
-            List<Group> groups = client.getAuthenticated().getAllGroups();
+            List<Group> groups = client.getAllGroups();
             assertNotNull(groups);
             assertFalse(groups.isEmpty());
             LOG.info("Groups : {0}", groups);
 
-            UserCollectionResponse response = client.getAuthenticated().getAllUsers(1);
+            UserCollectionResponse response = client.getAllUsers(1);
             List<User> userList = response.getValue();
             assertNotNull(userList);
             assertFalse(userList.isEmpty());
             assertEquals(1, userList.size());
             LOG.info("Users paged : {0}", userList);
 
-            List<User> userList2 = client.getAuthenticated().
+            List<User> userList2 = client.
                     getAllUsersNextPage(response.getOdataNextLink()).getValue();
             assertNotNull(userList2);
             assertFalse(userList2.isEmpty());
@@ -643,7 +647,7 @@ public class AzureConnectorTests {
             AzureFilter filter = new AzureFilter(AzureFilterOp.EQUALS,
                     AttributeBuilder.build(AzureAttributes.USER_DISPLAY_NAME, "testuser-" + uid),
                     "testuser-" + uid, false, new ArrayList<>());
-            List<User> usersFound = client.getAuthenticated().getUsersFilteredBy(filter);
+            List<User> usersFound = client.getUsersFilteredBy(filter);
             assertNotNull(usersFound);
             assertFalse(usersFound.isEmpty());
             LOG.info("User found : {0}", usersFound);
@@ -651,7 +655,7 @@ public class AzureConnectorTests {
             filter = new AzureFilter(AzureFilterOp.STARTS_WITH,
                     AttributeBuilder.build(AzureAttributes.GROUP_DISPLAY_NAME, "test"),
                     "test", false, new ArrayList<>());
-            List<Group> groupsFound = client.getAuthenticated().getGroupsFilteredBy(filter);
+            List<Group> groupsFound = client.getGroupsFilteredBy(filter);
             assertNotNull(usersFound);
             assertFalse(usersFound.isEmpty());
             LOG.info("User found : {0}", groupsFound);
@@ -660,7 +664,7 @@ public class AzureConnectorTests {
             User newUser = new User();
             newUser.setId(userFound.getId());
             newUser.setCity("City update");
-            User userUpdated = client.getAuthenticated().updateUser(newUser);
+            User userUpdated = client.updateUser(newUser);
             assertNotNull(userUpdated);
             assertNotEquals(userUpdated.getCity(), userFound.getCity());
             LOG.info("userUpdated : {0}", userUpdated);
@@ -669,24 +673,24 @@ public class AzureConnectorTests {
             Group newGroup = new Group();
             newGroup.setId(groupFound.getId());
             newGroup.setDisplayName("Group name update");
-            Group groupUpdated = client.getAuthenticated().updateGroup(newGroup);
+            Group groupUpdated = client.updateGroup(newGroup);
             assertNotNull(groupUpdated);
             assertNotEquals(groupUpdated.getDisplayName(), groupFound.getDisplayName());
             LOG.info("groupUpdated : {0}", groupUpdated);
 
             // ADD USER TO GROUP
-            client.getAuthenticated().addUserToGroup(testUser, testGroup);
-            Boolean memberOf = client.getAuthenticated().isMemberOf(testUser, testGroup);
+            client.addUserToGroup(testUser, testGroup);
+            Boolean memberOf = client.isMemberOf(testUser, testGroup);
             assertTrue(memberOf);
 
             // GET GROUP MEMBERS
-            List<User> groupMembers = client.getAuthenticated().getAllMembersOfGroup(testGroup);
+            List<User> groupMembers = client.getAllMembersOfGroup(testGroup);
             assertNotNull(groupMembers);
             assertFalse(groupMembers.isEmpty());
             LOG.info("Members of Group : {0}", groupMembers);
 
             // GET USER GROUPS
-            List<Group> userGroups = client.getAuthenticated().getAllGroupsForUser(testUser).getValue().stream().
+            List<Group> userGroups = client.getAllGroupsForUser(testUser).getValue().stream().
                     filter(Group.class::isInstance).map(Group.class::cast).collect(Collectors.toList());
             assertNotNull(userGroups);
             assertFalse(userGroups.isEmpty());
@@ -694,25 +698,25 @@ public class AzureConnectorTests {
 
             // GET MEMBERS OF
             List<String> memberGroups =
-                    client.getAuthenticated().getMemberGroups(testUser, true);
+                    client.getMemberGroups(testUser, true);
             assertNotNull(memberGroups);
             LOG.info("getMemberGroups : {0}", memberGroups);
 
             List<String> memberObjects =
-                    client.getAuthenticated().getMemberObjects(testUser, true);
+                    client.getMemberObjects(testUser, true);
             assertNotNull(memberObjects);
             LOG.info("getMemberObjects : {0}", memberObjects);
 
             // DELETE USER FROM GROUP
-            client.getAuthenticated().deleteUserFromGroup(testUser, testGroup);
-            memberOf = client.getAuthenticated().isMemberOf(testUser, testGroup);
+            client.deleteUserFromGroup(testUser, testGroup);
+            memberOf = client.isMemberOf(testUser, testGroup);
             assertFalse(memberOf);
 
             if (CONF.getRestoreItems()) {
                 //DELETE USER
-                client.getAuthenticated().deleteUser(testUser);
+                client.deleteUser(testUser);
                 try {
-                    client.getAuthenticated().getUser(testUser);
+                    client.getUser(testUser);
                     fail(); // must fail
                 } catch (RuntimeException e) {
                     assertNotNull(e);
@@ -726,7 +730,7 @@ public class AzureConnectorTests {
                 group365.setSecurityEnabled(false);
                 group365.setGroupTypes(Collections.singletonList("Unified"));
 
-                Group group365Created = client.getAuthenticated().createGroup(group365);
+                Group group365Created = client.createGroup(group365);
                 assertNotNull(group365Created);
                 assertNotNull(group365Created.getId());
                 LOG.info("groupCreated : {0}", group365Created);
@@ -734,28 +738,28 @@ public class AzureConnectorTests {
                 String testGroup365 = group365Created.getId();
 
                 //DELETE GROUP
-                client.getAuthenticated().deleteGroup(testGroup365);
+                client.deleteGroup(testGroup365);
                 try {
-                    client.getAuthenticated().getGroup(testGroup365);
+                    client.getGroup(testGroup365);
                     fail(); // must fail
                 } catch (RuntimeException e) {
                     assertNotNull(e);
                 }
 
                 //RESTORE USER
-                DirectoryObject directoryObject = client.getAuthenticated().restoreDirectoryObject(testUser);
+                DirectoryObject directoryObject = client.restoreDirectoryObject(testUser);
                 assertNotNull(directoryObject);
                 assertNotNull(directoryObject.getId());
                 LOG.info("User restored : {0}", directoryObject);
-                userFound = client.getAuthenticated().getUser(directoryObject.getId());
+                userFound = client.getUser(directoryObject.getId());
                 assertNotNull(userFound);
 
                 //RESTORE GROUP
-                directoryObject = client.getAuthenticated().restoreDirectoryObject(testGroup365);
+                directoryObject = client.restoreDirectoryObject(testGroup365);
                 assertNotNull(directoryObject);
                 assertNotNull(directoryObject.getId());
                 LOG.info("Group restored : {0}", directoryObject);
-                groupFound = client.getAuthenticated().getGroup(directoryObject.getId());
+                groupFound = client.getGroup(directoryObject.getId());
                 assertNotNull(groupFound);
                 assertNotNull(groupFound.getMail());
             }
@@ -769,7 +773,7 @@ public class AzureConnectorTests {
 
     private void doTestLicenses(final AzureClient client, final String testUser) {
         // GET SIGNED-IN USER LICENSES
-        List<String> licenses = client.getAuthenticated().getCurrentTenantSkuIds(true);
+        List<String> licenses = client.getCurrentTenantSkuIds(true);
         assertNotNull(licenses);
         LOG.info("Current enabled tenant licenses : {0}", licenses);
 
@@ -784,9 +788,9 @@ public class AzureConnectorTests {
             AssignLicensePostRequestBody body = new AssignLicensePostRequestBody();
             body.setAddLicenses(Collections.singletonList(assignedLicense));
             LOG.info("New assignedLicense : {0}", assignedLicense);
-            client.getAuthenticated().assignLicense(testUser, body);
+            client.assignLicense(testUser, body);
 
-            User userWithNewLicense = client.getAuthenticated().getUser(testUser);
+            User userWithNewLicense = client.getUser(testUser);
             assertNotNull(userWithNewLicense);
             assertNotNull(userWithNewLicense.getId());
             assertFalse(userWithNewLicense.getAssignedLicenses().isEmpty());
@@ -798,9 +802,9 @@ public class AzureConnectorTests {
             body = new AssignLicensePostRequestBody();
             body.setRemoveLicenses(Collections.singletonList(UUID.fromString(VALID_LICENSE)));
             LOG.info("New assignedLicense : {0}", assignedLicense);
-            client.getAuthenticated().assignLicense(testUser, body);
+            client.assignLicense(testUser, body);
 
-            User userWithRemovedLicense = client.getAuthenticated().getUser(testUser);
+            User userWithRemovedLicense = client.getUser(testUser);
             assertNotNull(userWithRemovedLicense);
             assertNotNull(userWithRemovedLicense.getId());
             assertTrue(userWithRemovedLicense.getAssignedLicenses().isEmpty());

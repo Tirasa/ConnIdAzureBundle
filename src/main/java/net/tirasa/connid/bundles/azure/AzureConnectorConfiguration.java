@@ -49,6 +49,10 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     private String clientSecret;
 
+    private String certificatePath;
+
+    private String certificatePassword;
+
     private String scopes = "https://graph.microsoft.com/.default";
 
     private String[] userAttributesToGet = new String[] {
@@ -70,7 +74,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 2, displayMessageKey = "authority.display",
-            helpMessageKey = "authority.help", required = true)
+            helpMessageKey = "authority.help")
     public String getAuthority() {
         return authority;
     }
@@ -100,7 +104,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 5, displayMessageKey = "username.display",
-            helpMessageKey = "username.help", required = true)
+            helpMessageKey = "username.help")
     public String getUsername() {
         return username;
     }
@@ -110,7 +114,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 6, displayMessageKey = "password.display",
-            helpMessageKey = "password.help", required = true, confidential = true)
+            helpMessageKey = "password.help", confidential = true)
     public String getPassword() {
         return password;
     }
@@ -140,7 +144,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
     }
 
     @ConfigurationProperty(order = 9, displayMessageKey = "clientSecret.display",
-            helpMessageKey = "clientSecret.help", required = true)
+            helpMessageKey = "clientSecret.help")
     public String getClientSecret() {
         return clientSecret;
     }
@@ -149,7 +153,27 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         this.clientSecret = clientSecret;
     }
 
-    @ConfigurationProperty(order = 10, displayMessageKey = "scopes.display",
+    @ConfigurationProperty(order = 10, displayMessageKey = "certificatePath.display",
+            helpMessageKey = "certificatePath.help")
+    public String getCertificatePath() {
+        return certificatePath;
+    }
+
+    public void setCertificatePath(final String certificatePath) {
+        this.certificatePath = certificatePath;
+    }
+
+    @ConfigurationProperty(order = 11, displayMessageKey = "certificatePassword.display",
+            helpMessageKey = "certificatePassword.help", confidential = true)
+    public String getCertificatePassword() {
+        return certificatePassword;
+    }
+
+    public void setCertificatePassword(final String certificatePassword) {
+        this.certificatePassword = certificatePassword;
+    }
+
+    @ConfigurationProperty(order = 12, displayMessageKey = "scopes.display",
             helpMessageKey = "scopes.help", required = true)
     public String getScopes() {
         return scopes;
@@ -159,7 +183,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         this.scopes = scopes;
     }
 
-    @ConfigurationProperty(order = 11, displayMessageKey = "userAttributesToGet.display",
+    @ConfigurationProperty(order = 13, displayMessageKey = "userAttributesToGet.display",
             helpMessageKey = "userAttributesToGet.help", required = true)
     public String[] getUserAttributesToGet() {
         return userAttributesToGet;
@@ -169,7 +193,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         this.userAttributesToGet = userAttributesToGet.clone();
     }
 
-    @ConfigurationProperty(order = 12, displayMessageKey = "groupAttributesToGet.display",
+    @ConfigurationProperty(order = 14, displayMessageKey = "groupAttributesToGet.display",
             helpMessageKey = "groupAttributesToGet.help", required = true)
     public String[] getGroupAttributesToGet() {
         return groupAttributesToGet;
@@ -179,7 +203,7 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
         this.groupAttributesToGet = groupAttributesToGet.clone();
     }
 
-    @ConfigurationProperty(order = 13, displayMessageKey = "restoreItems.display",
+    @ConfigurationProperty(order = 15, displayMessageKey = "restoreItems.display",
             helpMessageKey = "restoreItems.help")
     public boolean getRestoreItems() {
         return restoreItems;
@@ -191,17 +215,30 @@ public class AzureConnectorConfiguration extends AbstractConfiguration implement
 
     @Override
     public void validate() {
-        if (StringUtil.isBlank(authority)) {
-            throw new IllegalArgumentException("Authority cannot be null or empty.");
-        }
         if (StringUtil.isBlank(clientId)) {
             throw new IllegalArgumentException("Client Id cannot be null or empty.");
         }
-        if (StringUtil.isBlank(username)) {
-            throw new IllegalArgumentException("Username cannot be null or empty.");
+        boolean hasClientSecret = StringUtil.isNotBlank(clientSecret);
+        boolean hasCertificatePath = StringUtil.isNotBlank(certificatePath);
+        boolean hasCertificatePassword = StringUtil.isNotBlank(certificatePassword);
+        if (hasClientSecret && (hasCertificatePath || hasCertificatePassword)) {
+            throw new IllegalArgumentException("Configure either a client secret or a certificate, not both.");
         }
-        if (StringUtil.isBlank(password)) {
-            throw new IllegalArgumentException("Password Id cannot be null or empty.");
+        if (hasCertificatePassword && !hasCertificatePath) {
+            throw new IllegalArgumentException("Certificate password requires a certificate path.");
+        }
+        if (!hasClientSecret && !hasCertificatePath) {
+            if (StringUtil.isBlank(username) || StringUtil.isBlank(password)) {
+                throw new IllegalArgumentException(
+                        "Configure a certificate, a client secret, or legacy username/password.");
+            }
+            if (StringUtil.isBlank(authority)) {
+                throw new IllegalArgumentException(
+                        "Authority is required for legacy username/password authentication.");
+            }
+        }
+        if (StringUtil.isBlank(tenantId)) {
+            throw new IllegalArgumentException("Tenant Id cannot be null or empty.");
         }
         if (StringUtil.isBlank(domain)) {
             throw new IllegalArgumentException("Domain Id cannot be null or empty.");

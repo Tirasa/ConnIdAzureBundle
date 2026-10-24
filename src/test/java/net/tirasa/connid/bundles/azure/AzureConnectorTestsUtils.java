@@ -55,6 +55,12 @@ public final class AzureConnectorTestsUtils {
                 case "oauth2.clientSecret":
                     azureConnectorConfiguration.setClientSecret(entry.getValue());
                     break;
+                case "oauth2.certificatePath":
+                    azureConnectorConfiguration.setCertificatePath(entry.getValue());
+                    break;
+                case "oauth2.certificatePassword":
+                    azureConnectorConfiguration.setCertificatePassword(entry.getValue());
+                    break;
                 case "oauth2.scopes":
                     azureConnectorConfiguration.setScopes(entry.getValue());
                     break;
